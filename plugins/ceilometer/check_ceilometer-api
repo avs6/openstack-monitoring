@@ -1,0 +1,90 @@
+#!/bin/bash
+#
+# Ceilometer API monitoring script
+#
+# Copyright © 2013 eNovance <licensing@enovance.com>
+#
+# Author: Emilien Macchi <emilien.macchi@enovance.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+set -e
+
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+STATE_DEPENDENT=4
+
+usage ()
+{
+    echo "Usage: $0 [OPTIONS]"
+    echo " -u        Username"
+    echo " -p        Password"
+    echo " -t        Tenant"
+    echo " -a        Authentication URL"
+    echo " -h        Get help"
+}
+
+while getopts 'h:u:p:t:a:' OPTION
+do
+    case $OPTION in
+        u)
+            OS_USERNAME=$OPTARG
+            ;;
+        p)
+            OS_PASSWORD=$OPTARG
+            ;;
+        t)
+            OS_TENANT_NAME=$OPTARG
+            ;;
+        a)
+            OS_AUTH_URL=$OPTARG
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [[ -z $OS_USERNAME ]] || [[ -z $OS_PASSWORD ]] || [[ -z $OS_TENANT_NAME ]] || [[ -z $OS_AUTH_URL ]]
+then
+     usage
+     exit 1
+fi
+
+if ! which ceilometer >/dev/null 2>&1
+then
+    echo "python-ceilometerclient is not installed."
+    exit $STATE_UNKNOWN
+fi
+
+CMDLINE="ceilometer --os-username $OS_USERNAME --os-password $OS_PASSWORD --os-tenant-name $OS_TENANT_NAME --os-auth-url $OS_AUTH_URL meter-list"
+
+if ! KEY=$($CMDLINE 2>/dev/null)
+then
+    echo "Unable to list meters"
+    exit $STATE_CRITICAL
+fi
+
+count=$(($($CMDLINE 2>/dev/null | wc -l)-4))
+
+echo "Ceilometer API is working with $count meters."
+
