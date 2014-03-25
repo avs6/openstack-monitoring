@@ -35,10 +35,12 @@ usage ()
     echo " -p        Password"
     echo " -t        Tenant"
     echo " -a        Authentication URL"
+    echo " -c        Critical response time"
+    echo " -w        Warning response time"
     echo " -h        Get help"
 }
 
-while getopts 'h:u:p:t:a:' OPTION
+while getopts 'h:u:p:t:a:w:c:' OPTION
 do
     case $OPTION in
         u)
@@ -52,6 +54,12 @@ do
             ;;
         a)
             OS_AUTH_URL=$OPTARG
+            ;;
+        c)
+            CRITICAL=$OPTARG
+            ;;
+        w)
+            WARN=$OPTARG
             ;;
         h)
             usage
@@ -70,6 +78,9 @@ then
      exit 1
 fi
 
+[ -z $WARN ] && WARN=15
+[ -z $CRITICAL ] && CRITICAL=30
+
 if ! which ceilometer >/dev/null 2>&1
 then
     echo "python-ceilometerclient is not installed."
@@ -77,6 +88,7 @@ then
 fi
 
 CMDLINE="ceilometer --os-username $OS_USERNAME --os-password $OS_PASSWORD --os-tenant-name $OS_TENANT_NAME --os-auth-url $OS_AUTH_URL meter-list"
+STARTTIME=$(date +%s)
 
 if ! KEY=$($CMDLINE 2>/dev/null)
 then
@@ -84,7 +96,19 @@ then
     exit $STATE_CRITICAL
 fi
 
-count=$(($($CMDLINE 2>/dev/null | wc -l)-4))
+ENDTIME=$(date +%s)
+TIMEDIFF=$(($ENDTIME-$STARTTIME))
 
-echo "Ceilometer API is working with $count meters."
+if [ "$TIMEDIFF" -gt "$CRITICAL" ]; then
+    echo "Timeout while querying Ceilometer API"
+    exit $STATE_CRITICAL
+elif [ "$TIMEDIFF" -gt "$WARN" ]; then
+    STATUS=$STATE_WARNING
+else
+    STATUS=$STATE_OK
+fi
+
+echo "Ceilometer API is working.|$TIMEDIFF"
+
+exit $STATUS
 
