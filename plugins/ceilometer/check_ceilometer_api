@@ -35,12 +35,13 @@ usage ()
     echo " -p        Password"
     echo " -t        Tenant"
     echo " -a        Authentication URL"
+    echo " -e        Ceilometer URL"
     echo " -c        Critical response time"
     echo " -w        Warning response time"
     echo " -h        Get help"
 }
 
-while getopts 'h:u:p:t:a:w:c:' OPTION
+while getopts 'h:u:p:t:a:e:w:c:' OPTION
 do
     case $OPTION in
         u)
@@ -54,6 +55,9 @@ do
             ;;
         a)
             OS_AUTH_URL=$OPTARG
+            ;;
+        e)
+            CEILOMETER_URL=$OPTARG
             ;;
         c)
             CRITICAL=$OPTARG
@@ -72,7 +76,7 @@ do
     esac
 done
 
-if [[ -z $OS_USERNAME ]] || [[ -z $OS_PASSWORD ]] || [[ -z $OS_TENANT_NAME ]] || [[ -z $OS_AUTH_URL ]]
+if [[ -z $OS_USERNAME ]] || [[ -z $OS_PASSWORD ]] || [[ -z $OS_TENANT_NAME ]] || [[ -z $OS_AUTH_URL ]] || [[ -z $CEILOMETER_URL ]]
 then
      usage
      exit 1
@@ -87,7 +91,7 @@ then
     exit $STATE_UNKNOWN
 fi
 
-CMDLINE="ceilometer --os-username $OS_USERNAME --os-password $OS_PASSWORD --os-tenant-name $OS_TENANT_NAME --os-auth-url $OS_AUTH_URL meter-list"
+CMDLINE="ceilometer --os-username $OS_USERNAME --os-password $OS_PASSWORD --os-tenant-name $OS_TENANT_NAME --os-auth-url $OS_AUTH_URL --ceilometer-url $CEILOMETER_URL meter-list"
 STARTTIME=$(date +%s)
 
 if ! KEY=$($CMDLINE 2>/dev/null)
