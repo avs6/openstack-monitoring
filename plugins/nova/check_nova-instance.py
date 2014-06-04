@@ -49,6 +49,7 @@ class Novautils:
     def __init__(self, nova_client):
         self.nova_client = nova_client
         self.msgs = []
+        self.notifications = []
         self.instance = None
         self.start = datetime.now()
 
@@ -91,13 +92,18 @@ class Novautils:
                                    catalog_url.fragment])
         self.nova_client.client.set_management_url(url)
 
-    def check_existing_instance(self, instance_name):
+    def check_existing_instance(self, instance_name, delete):
         count = 0
         for s in self.nova_client.servers.list():
             if s.name == instance_name:
+                if delete:
+                    s.delete()  # asynchronous call, we do not check that it worked
                 count += 1
         if count > 0:
-            self.msgs.append("Found '%s' present %d time(s).  Won't create test instance.  Please check and delete." % (instance_name, count))
+            if delete:
+                self.notifications.append("Found '%s' present %d time(s)" % (instance_name, count))
+            else:
+                self.msgs.append("Found '%s' present %d time(s).  Won't create test instance.  Please check and delete." % (instance_name, count))
 
     def get_image(self, image_name):
         if not self.msgs:
@@ -197,6 +203,9 @@ parser.add_argument('--instance_name', metavar='instance_name', type=str,
                     default=default_instance_name,
                     help="Instance name to use (%s by default)" % default_instance_name)
 
+parser.add_argument('--force_delete', action='store_true',
+                    help='If matching instances are found delete them and add a notification in the message instead of getting out in critical state.')
+
 parser.add_argument('--api_version', metavar='api_version', type=str,
                     default='2',
                     help='Version of the API to use. 2 by default.')
@@ -227,7 +236,7 @@ if args.verbose:
 if args.endpoint_url:
     util.mangle_url(args.endpoint_url)
 
-util.check_existing_instance(args.instance_name)
+util.check_existing_instance(args.instance_name, args.force_delete)
 util.get_image(args.image_name)
 util.get_flavor(args.flavor_name)
 util.create_instance(args.instance_name)
@@ -239,6 +248,9 @@ if util.msgs:
     print "CRITICAL - %s" % ", ".join(util.msgs)
     sys.exit(STATE_CRITICAL)
 
-duration = util.get_duration()    
-print("OK - Nova instance spawned and deleted in %d seconds | time=%d" % (duration, duration))
+duration = util.get_duration()
+notification = ""
+if util.notifications:
+    notification = "(" + ", ".join(util.notifications) + ")"
+print("OK - Nova instance spawned and deleted in %d seconds %s| time=%d" % (duration, notification, duration))
 sys.exit(STATE_OK)

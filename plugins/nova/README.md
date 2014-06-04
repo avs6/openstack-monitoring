@@ -24,6 +24,7 @@
 * `--image_name`: Image name to use (cirros-0.3.0-x86_64-disk by defalut)
 * `--flavor_name`: Flavor name to use (m1.tiny by default)
 * `--instance_name`: Instance name to use (monitoring_test by default)
+* `--force_delete`: If matching instances are found delete them and add a notification in the message instead of getting out in critical state
 * `--api_version`: Version of the API to use. 2 by default. (1.1 supported, and 3 not tested)
 * `--timeout`: Max number of second to create/destroy a instance (120 by default).
 * `--verbose`: Print requests on stderr
