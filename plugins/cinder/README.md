@@ -23,6 +23,7 @@
 * `--endpoint_type`: When not overriding, which type to use in the catalog.  Public by default.
 * `--volume_name`: Name of the volume to create (monitoring_test by default)
 * `--volume_size`: Size of the volume to create (1 GB by default)
+* `--force_delete`: If matching volumes are found, delete them and add a notification in the message instead of getting out in critical state.
 * `--api_version`: Version of the API to use. 1 by default.
 * `--timeout`: Max number of second to create/destroy a volume (120 by default).
 * `--verbose`: Print requests on stderr

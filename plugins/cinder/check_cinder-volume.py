@@ -47,6 +47,7 @@ class Novautils:
     def __init__(self, nova_client):
         self.nova_client = nova_client
         self.msgs = []
+        self.notifications = []
         self.volume = None
         self.start = datetime.now()
 
@@ -89,13 +90,18 @@ class Novautils:
                                    catalog_url.fragment])
         self.nova_client.client.management_url = url
 
-    def check_existing_volume(self, volume_name):
+    def check_existing_volume(self, volume_name, delete):
         count = 0
         for s in self.nova_client.volumes.list():
             if s.display_name == volume_name:
+                if delete:
+                    s.delete()  # asynchronous call, we do not check that it worked
                 count += 1
         if count > 0:
-            self.msgs.append("Found '%s' present %d time(s).  Won't create test volume.  Please check and delete." % (volume_name, count))
+            if delete:
+                self.notifications.append("Found '%s' present %d time(s)" % (volume_name, count))
+            else:
+                self.msgs.append("Found '%s' present %d time(s).  Won't create test volume.  Please check and delete." % (volume_name, count))
 
     def create_volume(self, volume_name, size):
         if not self.msgs:
@@ -169,6 +175,10 @@ parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
                     default="publicURL",
                     help='Endpoint type in the catalog request.  Public by default.')
 
+parser.add_argument('--force_delete', action='store_true',
+                    help='If matching volumes are found, delete them and add a notification in the message instead of getting out in critical state.')
+
+
 parser.add_argument('--api_version', metavar='api_version', type=str,
                     default='1',
                     help='Version of the API to use. 1 by default.')
@@ -207,7 +217,7 @@ if args.verbose:
 if args.endpoint_url:
     util.mangle_url(args.endpoint_url)
 
-util.check_existing_volume(args.volume_name)
+util.check_existing_volume(args.volume_name, args.force_delete)
 util.create_volume(args.volume_name,args.volume_size)
 util.volume_ready(args.timeout)
 util.delete_volume()
@@ -218,5 +228,10 @@ if util.msgs:
     sys.exit(STATE_CRITICAL)
 
 duration = util.get_duration()    
-print("OK - Volume spawned and deleted in %d seconds | time=%d" % (duration, duration))
+notification = ""
+
+if util.notifications:
+    notification = "(" + ", ".join(util.notifications) + ")"
+
+print("OK - Volume spawned and deleted in %d seconds %s| time=%d" % (duration, notification, duration))
 sys.exit(STATE_OK)
