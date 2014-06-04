@@ -60,9 +60,6 @@ class Novautils:
         except Exception as e:
             script_error("unknown error filling object with data: %s\n" % e)
 
-
-        import pdb; pdb.set_trace()
-
         try:
             endpoint_url = urlparse.urlparse(url)
         except Exception as e:
