@@ -50,6 +50,7 @@ class Novautils:
         self.nova_client = nova_client
         self.msgs = []
         self.notifications = []
+        self.performances = []
         self.instance = None
         self.start = datetime.now()
 
@@ -92,12 +93,14 @@ class Novautils:
                                    catalog_url.fragment])
         self.nova_client.client.set_management_url(url)
 
-    def check_existing_instance(self, instance_name, delete):
+    def check_existing_instance(self, instance_name, delete, timeout=45):
         count = 0
         for s in self.nova_client.servers.list():
             if s.name == instance_name:
                 if delete:
                     s.delete()  # asynchronous call, we do not check that it worked
+                    self._instance_status(s, timeout)
+                    self.performances.append("undeleted_server_%s_%d=%s" %(s.name, count, s.created))
                 count += 1
         if count > 0:
             if delete:
@@ -167,6 +170,25 @@ class Novautils:
                 self.msgs.append("Cannot delete the vm (%s)" % e)
                 break
 
+    def _instance_status(self, instance, timeout):
+        deleted = False
+        timer = 0
+        while not deleted:
+            time.sleep(1)
+            if timer >= timeout:
+                self.msgs.append("Could not delete the vm %s within %d seconds (created at %s)" % (instance.name, timer, instance.created))
+                break
+            timer += 1
+            try:
+                instance.get()
+            except exceptions.NotFound:
+                deleted = True
+            except Exception as e:
+                self.msgs.append("Cannot delete the vm %s (%s)" % (instance.name, e))
+                self.performances.append("undeleted_server_%s_%d=%s" %(instance.name, count, instance.created))
+                break
+        
+
 parser = argparse.ArgumentParser(description='Check an OpenStack Keystone server.')
 parser.add_argument('--auth_url', metavar='URL', type=str,
                     required=True,
@@ -214,6 +236,10 @@ parser.add_argument('--timeout', metavar='timeout', type=int,
                     default=120,
                     help='Max number of second to create a vm (120 by default).')
 
+parser.add_argument('--timeout_delete', metavar='timeout_delete', type=int,
+                    default=45,
+                    help='Max number of second to delete an existing instance (45 by default).')
+
 parser.add_argument('--verbose', action='count',
                     help='Print requests on stderr.')
 
@@ -236,7 +262,7 @@ if args.verbose:
 if args.endpoint_url:
     util.mangle_url(args.endpoint_url)
 
-util.check_existing_instance(args.instance_name, args.force_delete)
+util.check_existing_instance(args.instance_name, args.force_delete, args.timeout_delete)
 util.get_image(args.image_name)
 util.get_flavor(args.flavor_name)
 util.create_instance(args.instance_name)
@@ -252,5 +278,8 @@ duration = util.get_duration()
 notification = ""
 if util.notifications:
     notification = "(" + ", ".join(util.notifications) + ")"
-print("OK - Nova instance spawned and deleted in %d seconds %s| time=%d" % (duration, notification, duration))
+performance = ""
+if util.performances:
+    performance = " ".join(util.performances)
+print("OK - Nova instance spawned and deleted in %d seconds %s| time=%d %s" % (duration, notification, duration, performance))
 sys.exit(STATE_OK)
