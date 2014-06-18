@@ -45,6 +45,11 @@ def script_unknown(msg):
     sys.exit(STATE_UNKNOWN)
 
 
+def script_critical(msg):
+    sys.stderr.write("CRITICAL - %s" % msg)
+    sys.exit(STATE_CRITICAL)
+
+
 # python has no "toepoch" method: http://bugs.python.org/issue2736
 # now, after checking http://stackoverflow.com/a/16307378,
 # and http://stackoverflow.com/a/8778548 made my mind to this approach
@@ -71,7 +76,7 @@ class Novautils:
                 # force a connection to the server
                 self.connection_done = self.nova_client.limits.get()
             except Exception as e:
-                script_unknown("Cannot connect to cinder: %s\n" % e)
+                script_critical("Cannot connect to cinder: %s\n" % e)
 
     def get_duration(self):
         return totimestamp() - self.start
@@ -231,7 +236,7 @@ try:
                          endpoint_type=args.endpoint_type,
                          http_log_debug=args.verbose)
 except Exception as e:
-    script_unknown("Error creating nova communication object: %s\n" % e)
+    script_critical("Error creating nova communication object: %s\n" % e)
 
 util = Novautils(nova_client)
 
@@ -256,8 +261,8 @@ util.delete_volume()
 util.volume_deleted(args.timeout)
 
 if util.msgs:
-    print "CRITICAL - %s" % ", ".join(util.msgs)
-    sys.exit(STATE_CRITICAL)
+    script_critical(", ".join(util.msgs))
+
 
 duration = util.get_duration()    
 notification = ""

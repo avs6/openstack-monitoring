@@ -45,6 +45,13 @@ def script_unknown(msg):
     sys.stderr.write("UNKNOWN - %s" % msg)
     sys.exit(STATE_UNKNOWN)
 
+
+def script_critical(msg):
+    sys.stderr.write("CRITICAL - %s" % msg)
+    sys.exit(STATE_CRITICAL)
+
+
+
 # python has no "toepoch" method: http://bugs.python.org/issue2736
 # now, after checking http://stackoverflow.com/a/16307378,
 # and http://stackoverflow.com/a/8778548 made my mind to this approach
@@ -282,8 +289,8 @@ util.delete_instance()
 util.instance_deleted(args.timeout)
 
 if util.msgs:
-    print "CRITICAL - %s" % ", ".join(util.msgs)
-    sys.exit(STATE_CRITICAL)
+    script_critical(", ".join(util.msgs))
+
 
 duration = util.get_duration()
 notification = ""
