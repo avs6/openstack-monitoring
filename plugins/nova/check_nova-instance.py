@@ -71,16 +71,22 @@ class Novautils:
         self.notifications = ["instance_creation_time=%s" % self.start]
         self.performances = []
         self.instance = None
+        self.connection_done = False
+
+    def check_connection(self, force=False):
+        if not self.connection_done or force:
+            try:
+                # force a connection to the server
+                import pdb; pdb.set_trace()
+                self.connection_done = self.nova_client.limits.get()
+            except Exception as e:
+                script_critical("Cannot connect to nova: %s\n" % e)
 
     def get_duration(self):
         return totimestamp() - self.start
 
     def mangle_url(self, url):
-        # need to populate management_url property
-        try:
-            self.nova_client.servers.list()
-        except Exception as e:
-            script_unknown("unknown error filling object with data: %s\n" % e)
+        self.check_connection()
 
         try:
             endpoint_url = urlparse.urlparse(url)
@@ -262,13 +268,19 @@ parser.add_argument('--verbose', action='count',
                     help='Print requests on stderr.')
 
 args = parser.parse_args()
-nova_client = Client(args.api_version,
-                     username=args.username,
-                     project_id=args.tenant,
-                     api_key=args.password,
-                     auth_url=args.auth_url,
-                     endpoint_type=args.endpoint_type,
-                     http_log_debug=args.verbose)
+
+# this shouldn't raise any exception as no connection is done when
+# creating the object.  But It may change, so I catch everything.
+try:
+    nova_client = Client(args.api_version,
+                         username=args.username,
+                         project_id=args.tenant,
+                         api_key=args.password,
+                         auth_url=args.auth_url,
+                         endpoint_type=args.endpoint_type,
+                         http_log_debug=args.verbose)
+except Exception as e:
+    script_critical("Error creating nova communication object: %s\n" % e)
 
 util = Novautils(nova_client)
 
@@ -277,8 +289,14 @@ if args.verbose:
     nova_client.client._logger.setLevel(logging.DEBUG)
     nova_client.client._logger.addHandler(ch)
 
+# Initiate the first connection and catch error.
+util.check_connection()
+
 if args.endpoint_url:
     util.mangle_url(args.endpoint_url)
+    # after mangling the url, the endpoint has changed.  Check that
+    # it's valid.
+    util.check_connection(force=True)
 
 util.check_existing_instance(args.instance_name, args.force_delete, args.timeout_delete)
 util.get_image(args.image_name)
