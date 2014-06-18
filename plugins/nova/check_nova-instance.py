@@ -31,7 +31,6 @@ import time
 import logging
 import urlparse
 from datetime import datetime
-from time import mktime
 
 STATE_OK = 0
 STATE_WARNING = 1
@@ -46,17 +45,28 @@ def script_error(msg):
     sys.stderr.write("UNKNOWN - %s" % msg)
     sys.exit(STATE_UNKNOWN)
 
+# python has no "toepoch" method: http://bugs.python.org/issue2736
+# now, after checking http://stackoverflow.com/a/16307378,
+# and http://stackoverflow.com/a/8778548 made my mind to this approach
+def totimestamp(dt=None, epoch=datetime(1970,1,1)):
+    if not dt:
+        dt = datetime.utcnow()
+    td = dt - epoch
+    # return td.total_seconds()
+    return int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 1e6)
+
+
 class Novautils:
     def __init__(self, nova_client):
         self.nova_client = nova_client
         self.msgs = []
         self.notifications = []
-        self.start = datetime.now()
-        self.performances = ["instance_creation_time=%s" % int(mktime(self.start.timetuple()))]
+        self.start = totimestamp()
+        self.performances = ["instance_creation_time=%s" % totimestamp()]
         self.instance = None
 
     def get_duration(self):
-        return (datetime.now() - self.start).seconds
+        return totimestamp() - self.start
 
     def mangle_url(self, url):
         # need to populate management_url property
