@@ -39,9 +39,22 @@ STATE_WARNING = 1
 STATE_CRITICAL = 2
 STATE_UNKNOWN = 3
 
+
 def script_error(msg):
     sys.stderr.write("UNKNOWN - %s" % msg)
     sys.exit(STATE_UNKNOWN)
+
+
+# python has no "toepoch" method: http://bugs.python.org/issue2736
+# now, after checking http://stackoverflow.com/a/16307378,
+# and http://stackoverflow.com/a/8778548 made my mind to this approach
+def totimestamp(dt=None, epoch=datetime(1970,1,1)):
+    if not dt:
+        dt = datetime.utcnow()
+    td = dt - epoch
+    # return td.total_seconds()
+    return int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 1e6)
+
 
 class Novautils:
     def __init__(self, nova_client):
@@ -49,7 +62,7 @@ class Novautils:
         self.msgs = []
         self.notifications = []
         self.volume = None
-        self.start = datetime.now()
+        self.start = totimestamp()
         self.connection_done = False
 
     def check_connection(self, force=False):
@@ -61,7 +74,7 @@ class Novautils:
                 script_error("Cannot connect to cinder: %s\n" % e)
 
     def get_duration(self):
-        return (datetime.now() - self.start).seconds
+        return totimestamp() - self.start
 
     def mangle_url(self, url):
         # This first connection populate the structure we need inside
