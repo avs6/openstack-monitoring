@@ -66,7 +66,7 @@ class Novautils:
         self.nova_client = nova_client
         self.msgs = []
         self.start = totimestamp()
-        self.notifications = ["instance_creation_time=%s" % self.start]
+        self.notifications = ["volume_creation_time=%s" % self.start]
         self.volume = None
         self.connection_done = False
 
