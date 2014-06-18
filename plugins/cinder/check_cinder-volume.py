@@ -236,7 +236,7 @@ try:
                          endpoint_type=args.endpoint_type,
                          http_log_debug=args.verbose)
 except Exception as e:
-    script_critical("Error creating nova communication object: %s\n" % e)
+    script_critical("Error creating cinder communication object: %s\n" % e)
 
 util = Novautils(nova_client)
 
