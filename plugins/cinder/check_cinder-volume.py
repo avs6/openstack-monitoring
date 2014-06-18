@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Requirments: python-keystoneclient, python-argparse, python
+# Requirments: python-cinderclient, python-argparse, python
 
 import sys
 import argparse
@@ -32,7 +32,7 @@ import logging
 import urlparse
 from datetime import datetime
 
-DAEMON_DEFAULT_PORT=8776
+DAEMON_DEFAULT_PORT = 8776
 
 STATE_OK = 0
 STATE_WARNING = 1
@@ -53,12 +53,13 @@ def script_critical(msg):
 # python has no "toepoch" method: http://bugs.python.org/issue2736
 # now, after checking http://stackoverflow.com/a/16307378,
 # and http://stackoverflow.com/a/8778548 made my mind to this approach
-def totimestamp(dt=None, epoch=datetime(1970,1,1)):
+def totimestamp(dt=None, epoch=datetime(1970, 1, 1)):
     if not dt:
         dt = datetime.utcnow()
     td = dt - epoch
     # return td.total_seconds()
-    return int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 1e6)
+    return int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6)
+               / 1e6)
 
 
 class Novautils:
@@ -89,13 +90,16 @@ class Novautils:
         try:
             endpoint_url = urlparse.urlparse(url)
         except Exception as e:
-            script_unknown("you must provide an endpoint_url in the form <scheme>://<url>/ (%s)\n" % e)
+            script_unknown("you must provide an endpoint_url in the form"
+                           + "<scheme>://<url>/ (%s)\n" % e)
         scheme = endpoint_url.scheme
         if scheme is None:
-            script_unknown("you must provide an endpoint_url in the form <scheme>://<url>/ (%s)\n" % e)
+            script_unknown("you must provide an endpoint_url in the form"
+                           + "<scheme>://<url>/ (%s)\n" % e)
         catalog_url = None
         try:
-            catalog_url = urlparse.urlparse(self.nova_client.client.management_url)
+            catalog_url = urlparse.urlparse(
+                self.nova_client.client.management_url)
         except Exception as e:
             script_unknown("unknown error parsing the catalog url : %s\n" % e)
 
@@ -120,21 +124,28 @@ class Novautils:
         for s in self.nova_client.volumes.list():
             if s.display_name == volume_name:
                 if delete:
-                    s.delete()  # asynchronous call, we do not check that it worked
+                    # asynchronous call, we do not check that it worked
+                    s.delete()
                 count += 1
         if count > 0:
             if delete:
-                self.notifications.append("Found '%s' present %d time(s)" % (volume_name, count))
+                self.notifications.append("Found '%s' present %d time(s)"
+                                          % (volume_name, count))
             else:
-                self.msgs.append("Found '%s' present %d time(s).  Won't create test volume.  Please check and delete." % (volume_name, count))
+                self.msgs.append("Found '%s' present %d time(s). "
+                                 % (volume_name, count)
+                                 + "Won't create test volume. "
+                                 + "Please check and delete.")
 
     def create_volume(self, volume_name, size):
         if not self.msgs:
             try:
-                self.volume = self.nova_client.volumes.create(display_name=volume_name,
-                                                             size=size)
+                self.volume = self.nova_client.volumes.create(
+                    display_name=volume_name,
+                    size=size)
             except Exception as e:
-                self.msgs.append("Cannot create the vm %s (%s)" % (args.volume_name, e))
+                self.msgs.append("Cannot create the vm %s (%s)"
+                                 % (args.volume_name, e))
 
     def volume_ready(self, timeout):
         if not self.msgs:
@@ -148,11 +159,12 @@ class Novautils:
                 try:
                     self.volume.get()
                 except Exception as e:
-                    self.msgs.append("Problem getting the status of the volume: %s" % e)
+                    self.msgs.append("Problem getting the status of "
+                                     + "the volume: %s" % e)
                     break
 
     def delete_volume(self):
-        if not self.msgs or self.volume != None:
+        if not self.msgs or self.volume is not None:
             try:
                 self.volume.delete()
             except Exception as e:
@@ -164,7 +176,8 @@ class Novautils:
         while not deleted and not self.msgs:
             time.sleep(1)
             if timer >= timeout:
-                self.msgs.append("Could not delete the volume within %d seconds" % timer)
+                self.msgs.append("Could not delete the volume within"
+                                 + "%d seconds" % timer)
                 break
             timer += 1
             try:
@@ -176,7 +189,8 @@ class Novautils:
                 break
 
 
-parser = argparse.ArgumentParser(description='Check an OpenStack Keystone server.')
+parser = argparse.ArgumentParser(
+    description='Check an OpenStack Keystone server.')
 parser.add_argument('--auth_url', metavar='URL', type=str,
                     required=True,
                     help='Keystone URL')
@@ -198,10 +212,13 @@ parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
 
 parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
                     default="publicURL",
-                    help='Endpoint type in the catalog request.  Public by default.')
+                    help='Endpoint type in the catalog request. '
+                    + 'Public by default.')
 
 parser.add_argument('--force_delete', action='store_true',
-                    help='If matching volumes are found, delete them and add a notification in the message instead of getting out in critical state.')
+                    help='If matching volumes are found, delete them and add '
+                    + 'a notification in the message instead of getting out '
+                    + 'in critical state.')
 
 
 parser.add_argument('--api_version', metavar='api_version', type=str,
@@ -210,11 +227,13 @@ parser.add_argument('--api_version', metavar='api_version', type=str,
 
 parser.add_argument('--timeout', metavar='timeout', type=int,
                     default=120,
-                    help='Max number of second to create/delete a volume (120 by default).')
+                    help='Max number of second to create/delete a volume '
+                    + '(120 by default).')
 
 parser.add_argument('--volume_name', metavar='volume_name', type=str,
                     default="monitoring_test",
-                    help='Name of the volume to create (monitoring_test by default)')
+                    help='Name of the volume to create '
+                    + '(monitoring_test by default)')
 
 parser.add_argument('--volume_size', metavar='volume_size', type=int,
                     default=1,
@@ -255,7 +274,7 @@ if args.endpoint_url:
     util.check_connection(force=True)
 
 util.check_existing_volume(args.volume_name, args.force_delete)
-util.create_volume(args.volume_name,args.volume_size)
+util.create_volume(args.volume_name, args.volume_size)
 util.volume_ready(args.timeout)
 util.delete_volume()
 util.volume_deleted(args.timeout)
@@ -264,11 +283,12 @@ if util.msgs:
     script_critical(", ".join(util.msgs))
 
 
-duration = util.get_duration()    
+duration = util.get_duration()
 notification = ""
 
 if util.notifications:
     notification = "(" + ", ".join(util.notifications) + ")"
 
-print("OK - Volume spawned and deleted in %d seconds %s| time=%d" % (duration, notification, duration))
+print("OK - Volume spawned and deleted in %d seconds %s| time=%d"
+      % (duration, notification, duration))
 sys.exit(STATE_OK)
