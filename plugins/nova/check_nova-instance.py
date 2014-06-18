@@ -125,7 +125,6 @@ class Novautils:
         for s in self.nova_client.servers.list():
             if s.name == instance_name:
                 if delete:
-                    # asynchronous call, we do not check that it worked
                     s.delete()
                     self._instance_status(s, timeout, count)
                     self.performances.append("undeleted_server_%s_%d=%s"
