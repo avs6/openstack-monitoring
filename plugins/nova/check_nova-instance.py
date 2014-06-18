@@ -60,8 +60,8 @@ class Novautils:
     def __init__(self, nova_client):
         self.nova_client = nova_client
         self.msgs = []
-        self.notifications = ["instance_creation_time=%s" % totimestamp()]
         self.start = totimestamp()
+        self.notifications = ["instance_creation_time=%s" % self.start]
         self.performances = []
         self.instance = None
 
