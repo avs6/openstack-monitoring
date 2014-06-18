@@ -31,6 +31,7 @@ import time
 import logging
 import urlparse
 from datetime import datetime
+from time import mktime
 
 STATE_OK = 0
 STATE_WARNING = 1
@@ -50,9 +51,9 @@ class Novautils:
         self.nova_client = nova_client
         self.msgs = []
         self.notifications = []
-        self.performances = []
-        self.instance = None
         self.start = datetime.now()
+        self.performances = ["instance_creation_time=%s" % int(mktime(self.start.timetuple()))]
+        self.instance = None
 
     def get_duration(self):
         return (datetime.now() - self.start).seconds
