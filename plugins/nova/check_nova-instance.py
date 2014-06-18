@@ -77,7 +77,6 @@ class Novautils:
         if not self.connection_done or force:
             try:
                 # force a connection to the server
-                import pdb; pdb.set_trace()
                 self.connection_done = self.nova_client.limits.get()
             except Exception as e:
                 script_critical("Cannot connect to nova: %s\n" % e)
