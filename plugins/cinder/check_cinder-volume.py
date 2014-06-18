@@ -60,9 +60,9 @@ class Novautils:
     def __init__(self, nova_client):
         self.nova_client = nova_client
         self.msgs = []
-        self.notifications = []
-        self.volume = None
         self.start = totimestamp()
+        self.notifications = ["instance_creation_time=%s" % self.start]
+        self.volume = None
         self.connection_done = False
 
     def check_connection(self, force=False):
