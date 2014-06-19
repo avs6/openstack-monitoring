@@ -144,7 +144,7 @@ class Novautils:
                     display_name=volume_name,
                     size=size)
             except Exception as e:
-                self.msgs.append("Cannot create the vm %s (%s)"
+                self.msgs.append("Cannot create the volume %s (%s)"
                                  % (args.volume_name, e))
 
     def volume_ready(self, timeout):
@@ -281,7 +281,6 @@ util.volume_deleted(args.timeout)
 
 if util.msgs:
     script_critical(", ".join(util.msgs))
-
 
 duration = util.get_duration()
 notification = ""
