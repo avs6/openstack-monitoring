@@ -100,6 +100,7 @@ class Novautils:
         self.connection_done = False
         self.all_floating_ips = []
         self.fip = None
+        self.network_id = None
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -140,11 +141,18 @@ class Novautils:
                                  + "Won't create test floating ip. "
                                  + "Please check and delete.")
 
-    def create_floating_ip(self, router_name):
+    def get_network_id(self, router_name):
+        if not self.msgs:
+            if not self.network_id:
+                try:
+                    self.network_id = self.nova_client.list_networks(name=router_name,fields='id')['networks'][0]['id']
+                except Exception as e:
+                    self.msgs.append("Cannot find ext router named '%s'." % router_name)
+        
+    def create_floating_ip(self):
         if not self.msgs:
             try:
-                network_id = self.nova_client.list_networks(name=router_name,fields='id')['networks'][0]['id']
-                body={'floatingip': {'floating_network_id': network_id}}
+                body={'floatingip': {'floating_network_id': self.network_id}}
                 self.fip = self.nova_client.create_floatingip(body=body)
                 self.notifications.append("fip=%s" % self.fip['floatingip']['floating_ip_address'])
             except Exception as e:
@@ -248,7 +256,8 @@ util = Novautils(neutron_client)
 util.check_connection()
 
 util.check_existing_floatingip(args.floating_ip, args.force_delete)
-util.create_floating_ip(args.ext_router_name)
+util.get_network_id(args.ext_router_name)
+util.create_floating_ip()
 util.delete_floating_ip()
 
 if util.msgs:
