@@ -133,8 +133,8 @@ class Novautils:
                 count += 1
         if count > 0:
             if delete:
-                self.notifications.append("Found %d ip(s) :%s"
-                                          % (count, ', '.join(found_ips)))
+                self.notifications.append("Found %d ip(s): %s"
+                                          % (count, '{' + ', '.join(found_ips) + '}'))
             else:
                 self.msgs.append("Found %d ip(s): %s. "
                                  % (count,  ', '.join(found_ips))
