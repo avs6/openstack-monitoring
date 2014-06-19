@@ -32,6 +32,7 @@ import time
 import logging
 import urlparse
 from datetime import datetime
+import re
 
 DAEMON_DEFAULT_PORT = 9696
 
@@ -123,7 +124,7 @@ class Novautils:
         count = 0
         found_ips = []
         for ip in self.list_floating_ips():
-            if floating_ip == 'all' or ip['floating_ip_address'] == floating_ip:
+            if floating_ip == 'all' or floating_ip.match(ip['floating_ip_address']):
                 if delete:
                     # asynchronous call, we do not check that it worked
                     self.nova_client.delete_floatingip(ip['id'])
@@ -156,6 +157,11 @@ class Novautils:
             except Exception as e:
                 self.msgs.append("Cannot remove floating ip %s" % self.fip['floatingip']['id'])
 
+def fip_type(string):
+    if string == 'all':
+        return 'all'
+    else:
+        return re.compile(string)
 
 
 parser = argparse.ArgumentParser(
@@ -194,11 +200,12 @@ parser.add_argument('--timeout', metavar='timeout', type=int,
                     help='Max number of second to create/delete a floating ip '
                     + '(120 by default).')
 
-parser.add_argument('--floating_ip', metavar='floating_ip', type=str,
+parser.add_argument('--floating_ip', metavar='floating_ip', type=fip_type,
                     default=None,
-                    help='IP to check for existance.  This value should be "all" '
-                    + 'as it\'s not possible to create a specific ip. '
-                    + 'It is not by default, to avoid catastrophes ...')
+                    help='Regex of IP(s) to check for existance. '
+                    + 'This value can be "all" for conveniance (match all ip). '
+                    + 'This permit to avoid certain floating ip to be kept. '
+                    + 'Its default value prevents the removal of any existing floating ip')
 
 parser.add_argument('--ext_router_name', metavar='ext_router_name', type=str,
                     default='public',
