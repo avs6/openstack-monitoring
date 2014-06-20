@@ -41,12 +41,12 @@ STATE_UNKNOWN = 3
 
 
 def script_unknown(msg):
-    sys.stderr.write("UNKNOWN - %s" % msg)
+    sys.stderr.write("UNKNOWN - %s\n" % msg)
     sys.exit(STATE_UNKNOWN)
 
 
 def script_critical(msg):
-    sys.stderr.write("CRITICAL - %s" % msg)
+    sys.stderr.write("CRITICAL - %s\n" % msg)
     sys.exit(STATE_CRITICAL)
 
 
@@ -77,7 +77,7 @@ class Novautils:
                 # force a connection to the server
                 self.connection_done = self.nova_client.limits.get()
             except Exception as e:
-                script_critical("Cannot connect to cinder: %s\n" % e)
+                script_critical("Cannot connect to cinder: %s" % e)
 
     def get_duration(self):
         return totimestamp() - self.start
@@ -91,17 +91,17 @@ class Novautils:
             endpoint_url = urlparse.urlparse(url)
         except Exception as e:
             script_unknown("you must provide an endpoint_url in the form"
-                           + "<scheme>://<url>/ (%s)\n" % e)
+                           + "<scheme>://<url>/ (%s)" % e)
         scheme = endpoint_url.scheme
         if scheme is None:
             script_unknown("you must provide an endpoint_url in the form"
-                           + "<scheme>://<url>/ (%s)\n" % e)
+                           + "<scheme>://<url>/ (%s)" % e)
         catalog_url = None
         try:
             catalog_url = urlparse.urlparse(
                 self.nova_client.client.management_url)
         except Exception as e:
-            script_unknown("unknown error parsing the catalog url : %s\n" % e)
+            script_unknown("unknown error parsing the catalog url : %s" % e)
 
         port = endpoint_url.port
         if port is None:
@@ -255,7 +255,7 @@ try:
                          endpoint_type=args.endpoint_type,
                          http_log_debug=args.verbose)
 except Exception as e:
-    script_critical("Error creating cinder communication object: %s\n" % e)
+    script_critical("Error creating cinder communication object: %s" % e)
 
 util = Novautils(nova_client)
 
