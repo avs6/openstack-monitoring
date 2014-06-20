@@ -137,12 +137,14 @@ class Novautils:
                                  + "Won't create test volume. "
                                  + "Please check and delete.")
 
-    def create_volume(self, volume_name, size):
+    def create_volume(self, volume_name, size, volume_type):
         if not self.msgs:
             try:
-                self.volume = self.nova_client.volumes.create(
-                    display_name=volume_name,
-                    size=size)
+                conf = {'display_name': volume_name,
+                        'size': size}
+                if volume_type:
+                    conf['volume_type'] = volume_type
+                self.volume = self.nova_client.volumes.create(**conf)
             except Exception as e:
                 self.msgs.append("Cannot create the volume %s (%s)"
                                  % (args.volume_name, e))
@@ -239,6 +241,10 @@ parser.add_argument('--volume_size', metavar='volume_size', type=int,
                     default=1,
                     help='Size of the volume to create (1 GB by default)')
 
+parser.add_argument('--volume_type', metavar='volume_type', type=str,
+                    default=None,
+                    help='With multiple backends, choose the volume type.')
+
 parser.add_argument('--verbose', action='count',
                     help='Print requests on stderr.')
 
@@ -274,7 +280,7 @@ if args.endpoint_url:
     util.check_connection(force=True)
 
 util.check_existing_volume(args.volume_name, args.force_delete)
-util.create_volume(args.volume_name, args.volume_size)
+util.create_volume(args.volume_name, args.volume_size, args.volume_type)
 util.volume_ready(args.timeout)
 util.delete_volume()
 util.volume_deleted(args.timeout)
