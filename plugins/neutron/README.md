@@ -40,8 +40,9 @@ properly in your environment.
 * `./check_floating-ip.py --auth_url $OS_AUTH_URL --username $OS_USERNAME --tenant $OS_TENANT_NAME --password $OS_PASSWORD --floating_ip=all`
 
 
-Create a test floating ip and delete it.  Assume that the account is
-dedicated for test and remove *any* floating ip found under the account.
+Create a test floating ip and delete it.  Assumes that the account is
+dedicated for test and remove *any* floating ip found under the
+account.
 
 * `./check_floating-ip.py --auth_url $OS_AUTH_URL --username $OS_USERNAME --tenant $OS_TENANT_NAME --password $OS_PASSWORD --floating_ip=all --force_delete`
 
