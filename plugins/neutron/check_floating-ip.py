@@ -27,7 +27,6 @@ import sys
 import argparse
 from keystoneclient.v2_0 import client
 from neutronclient.neutron import client as neutron 
-#from neutronclient import exceptions
 import time
 import logging
 import urlparse
