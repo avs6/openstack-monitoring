@@ -26,6 +26,7 @@
 * `--volume_name`: Name of the volume to create (monitoring_test by default)
 * `--volume_size`: Size of the volume to create (1 GB by default)
 * `--volume_type`: With multiple backends, choose the volume type.
+* `--availability_zone`: Specify availability zone.
 * `--force_delete`: If matching volumes are found, delete them and add a notification in the message instead of getting out in critical state.
 * `--api_version`: Version of the API to use. 1 by default.
 * `--timeout`: Max number of second to create/destroy a volume (120 by default).
