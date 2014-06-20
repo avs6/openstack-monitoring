@@ -31,7 +31,7 @@
 
 ## Usage
 
-Create a test floatig and delete it, only if no floating ip match
+Create a test floating and delete it, only if no floating ip match
 `floating_ip` (here it matches everything).  If there is any floating
 ip it assumes that it's some leftover and exit in CRITICAL state,
 notifying the rogue ips.  Good for testing that everything works
