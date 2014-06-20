@@ -91,7 +91,7 @@ def mangle_url(orig_url, url):
     return url
 
 class Novautils:
-    def __init__(self, nova_client):
+    def __init__(self, nova_client, tenant_id):
         self.nova_client = nova_client
         self.msgs = []
         self.start = totimestamp()
@@ -100,6 +100,7 @@ class Novautils:
         self.all_floating_ips = []
         self.fip = None
         self.network_id = None
+        self.tenant_id = tenant_id
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -116,7 +117,9 @@ class Novautils:
         if not self.all_floating_ips:
             # TODO: my setup does not have pagination enable, so I didn't
             # took this into account.
-            for floating_ip in self.nova_client.list_floatingips(fields=['floating_ip_address', 'id'])['floatingips']:
+            for floating_ip in self.nova_client.list_floatingips(
+                    fields=['floating_ip_address', 'id'],
+                    tenant_id=self.tenant_id)['floatingips']:
                 self.all_floating_ips.append(floating_ip)
         return self.all_floating_ips
                 
@@ -248,8 +251,7 @@ try:
 
 except Exception as e:
     script_critical("Error creating neutron object: %s\n" % e)
-
-util = Novautils(neutron_client)
+util = Novautils(neutron_client, nova_client.tenant_id)
 
 # Initiate the first connection and catch error.
 util.check_connection()
