@@ -1,0 +1,48 @@
+# Check Contrail
+
+## Links
+
+* Upstream [github](https://github.com/sbadia/contrail-nagios/) URL.
+* CloudWatt [related US](https://jira.corp.cloudwatt.com/browse/INGPRD-1100).
+* CloudWatt [monitoring documentation](https://wiki.corp.cloudwatt.com/wiki/Op%C3%A9rations/Monitoring_Openstack)
+
+## Requirements
+
+* ruby
+* ruby-nokogiri
+
+## Check\_vrouter\_xmpp
+
+Check vrouter's xmpp connection with controller peers
+
+### Arguments
+
+* `-H, --host`: Hostname to run on (default: localhost)
+* `-p, --port`: Vrouter API port (default: 8085)
+* `-c, --cfg-ctrl`: Check only cfg-controller (default: false)
+* `-m, --mcast-ctrl`: Check only mcast-controller (default: false)
+* `-i, --ip-ctrl`: Check only this controller IP (default: false)
+* `-h, --help`: Display this help message
+
+### Usage
+
+* Check localhost vrouter on port 8085 (default)
+>     check_vrouter_xmpp
+>     UNKNOWN: Could not connect to localhost:8085 (please check)
+
+* Check only the xmpp connection with `10.10.0.58` peer controller IP
+>     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -i 10.10.0.58
+>     OK: Peer with 10.10.0.58 is Established (last state OpenSent at 2014-Jun-22 08:10:48.772736)
+
+* Check only the xmpp connection with the config controller peer
+>     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -c
+>     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
+
+* Check only the xmpp connection with the multicast controller peer
+>     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -m
+>     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
+
+* Check all xmpp connection peers
+>     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net
+>     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
+>     OK: Peer with 10.10.0.58 is Established (last state OpenSent at 2014-Jun-22 08:10:48.772736)
