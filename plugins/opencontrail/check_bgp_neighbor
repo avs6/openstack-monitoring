@@ -1,0 +1,176 @@
+#!/usr/bin/env ruby
+
+=begin
+
+OpenContrail checks (compat. with nagios exit codes)
+Copyright (C) 2014  Sebastien Badia <sebastien.badia@enovance.com>
+Sources and doc <https://github.com/sbadia/contrail-nagios/>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Requirments:
+  On Debian based systems: apt-get install ruby-nokogiri
+  On RedHat based systems: yum install rubygem-nokogiri
+
+=end
+
+# If ruby 1.8 use rubygem
+require 'rubygems' if RUBY_VERSION < '1.9.0'
+# Contrail API return xml output
+require 'nokogiri'
+# Wrapper for net/{http,https}
+require 'open-uri'
+# For option managment
+require 'ostruct'
+require 'optparse'
+
+# Monitoring return codes
+OK        = 0
+WARNING   = 1
+CRITICAL  = 2
+UNKNOWN   = 3
+DEPENDENT = 4
+
+# Script specific
+PROG_NAME = File.basename($0)
+VERSION   = '0.0.1'
+
+req = nil
+nodeok = 0
+
+cfg = OpenStruct.new
+OptionParser.new { |opts|
+  opts.banner = "Usage: #{PROG_NAME} [options]"
+  opts.summary_indent = '  '
+  opts.version = VERSION
+  opts.summary_width = 28
+  opts.program_name = PROG_NAME
+  opts.separator ''
+  # default options
+  cfg.host = 'localhost'
+  cfg.port = '8083'
+  cfg.asn = false
+  cfg.peer = false
+  cfg.peertype = false
+
+  opts.on('-H','--host', "Hostname to run on (default: #{cfg.host})") do
+    cfg.host = ARGV[0]
+  end
+  opts.on('-p','--port',"controller API port (default: #{cfg.port})") do
+    cfg.port = ARGV[0]
+  end
+  opts.on('-a','--peer-asn',"Check only this peer ASN (default: #{cfg.asn})") do
+    cfg.asn = ARGV[0]
+  end
+  opts.on('-t','--peer-type',"Check only this peer type (bgp/xmpp) (default: #{cfg.peertype})") do
+    cfg.peertype = ARGV[0]
+  end
+  opts.on('-p','--peer-ip',"Check only this peer IP (default: #{cfg.peer})") do
+    cfg.peer = ARGV[0]
+  end
+  opts.on_tail('-h','--help','Display this help message') do
+    puts opts
+    exit OK
+  end
+}.parse!
+
+# i-ocnclc-0000.adm.int4.aub.cloudwatt.net
+begin
+  open("http://#{cfg.host}:#{cfg.port}/Snh_BgpNeighborReq","User-Agent" => "#{PROG_NAME}/#{VERSION}") {|u| req = u.read }
+rescue
+  puts "UNKNOWN: Could not connect to #{cfg.host}:#{cfg.port} (please check)"
+  exit UNKNOWN
+end
+
+def parse_contrail_xml(data)
+  n = Nokogiri::XML(data)
+  bgp = Hash.new
+  node = 0
+  n.search('//BgpNeighborResp').each do |x|
+    bgp[node] = {
+      :peer_address => "#{x.at('peer_address').text}",
+      :state => "#{x.at('state').text}",
+      :last_state => "#{x.at('last_state').text}",
+      :last_state_at => "#{x.at('last_state_at').text}",
+      :peer_asn => "#{x.at('peer_asn').text}",
+      :encoding => "#{x.at('encoding').text}"
+    }
+    node+=1
+  end
+  return bgp
+end # def:: parse_contrail_xml(data)
+
+def display_peer(data,nodeid)
+  return "Peer with #{data[nodeid][:peer_address]} AS#{data[nodeid][:peer_asn]} (#{data[nodeid][:encoding]}) is #{data[nodeid][:state]} (last state #{data[nodeid][:last_state]} at #{data[nodeid][:last_state_at]})"
+end # def:: display_peer(data,nodeid)
+
+def nagios_display(data,nodeid,ok)
+  case data[nodeid][:state]
+  when 'Established'
+    puts "OK: #{display_peer(data,nodeid)}"
+    ok+=1
+  when 'OpenSent' || 'OpenConfirm'
+    puts "WARNING: #{display_peer(data,nodeid)}"
+  else
+    puts "CRITICAL: #{display_peer(data,nodeid)}"
+    # exit on the first critical connection
+    exit CRITICAL
+  end
+  return ok
+end # def:: nagios_display(data,nodeid)
+
+def nagios_exit(length,numok,cfg)
+  if cfg.ctrl or cfg.mcast or cfg.peer
+    length = 1
+  end
+  if numok == length
+    exit OK
+  elsif (numok < length and numok != 0)
+    exit WARNING
+  elsif numok == 0
+    exit CRITICAL
+  else
+    exit UNKNOWN
+  end
+end # def:: nagios_exit(length,numok)
+
+def select_node(data,key,value)
+  data.each do |k,v|
+    if v.has_key?(key)
+      if v[key] == value
+        return k
+      else
+        puts "UNKNOWN: #{value} not found, please check your configuration"
+        exit UNKNOWN
+      end
+    end
+  end
+end # def:: select_node(data,key,value)
+
+controller = parse_contrail_xml(req)
+
+if cfg.asn
+  nagios_exit(controller.length,nagios_display(controller,select_node(controller,:peer_asn,cfg.asn),nodeok),cfg)
+elsif cfg.peer
+  nagios_exit(controller.length,nagios_display(controller,select_node(controller,:peer_address,cfg.peer),nodeok),cfg)
+elsif cfg.peertype
+  nagios_exit(controller.length,nagios_display(controller,select_node(controller,:encoding,cfg.peertype.upcase),nodeok),cfg)
+else
+  controller.each_key do |k|
+    nodeok=+nagios_display(controller,k,nodeok)
+  end
+  nagios_exit(controller.length,nodeok,cfg)
+end
+
+# vi:ft=ruby
