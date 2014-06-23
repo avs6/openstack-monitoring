@@ -76,7 +76,7 @@ OptionParser.new { |opts|
   opts.on('-t','--peer-type',"Check only this peer type (bgp/xmpp) (default: #{cfg.peertype})") do
     cfg.peertype = ARGV[0]
   end
-  opts.on('-p','--peer-ip',"Check only this peer IP (default: #{cfg.peer})") do
+  opts.on('-i','--peer-ip',"Check only this peer IP (default: #{cfg.peer})") do
     cfg.peer = ARGV[0]
   end
   opts.on_tail('-h','--help','Display this help message') do
