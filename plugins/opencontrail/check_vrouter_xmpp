@@ -84,8 +84,8 @@ OptionParser.new { |opts|
 begin
   open("http://#{cfg.host}:#{cfg.port}/Snh_AgentXmppConnectionStatusReq","User-Agent" => "#{PROG_NAME}/#{VERSION}") {|u| req = u.read }
 rescue
-  puts "UNKNOWN: Could not connect to #{cfg.host}:#{cfg.port} (please check)"
-  exit UNKNOWN
+  puts "CRITICAL: Could not connect to #{cfg.host}:#{cfg.port} (please check)"
+  exit CRITICAL
 end
 
 def parse_contrail_xml(data)
