@@ -19,16 +19,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Requirments:
-  On Debian based systems: apt-get install ruby-nokogiri
-  On RedHat based systems: yum install rubygem-nokogiri
-
 =end
 
 # If ruby 1.8 use rubygem
 require 'rubygems' if RUBY_VERSION < '1.9.0'
 # Contrail API return xml output
-require 'nokogiri'
+require 'rexml/document'
 # Wrapper for net/{http,https}
 require 'open-uri'
 # For option managment
@@ -85,7 +81,6 @@ OptionParser.new { |opts|
   end
 }.parse!
 
-# i-ocnclc-0000.adm.int4.aub.cloudwatt.net
 begin
   open("http://#{cfg.host}:#{cfg.port}/Snh_BgpNeighborReq","User-Agent" => "#{PROG_NAME}/#{VERSION}") {|u| req = u.read }
 rescue
@@ -94,17 +89,18 @@ rescue
 end
 
 def parse_contrail_xml(data)
-  n = Nokogiri::XML(data)
+  document = REXML::Document.new(data)
   bgp = Hash.new
   node = 0
-  n.search('//BgpNeighborResp').each do |x|
+  document.elements.each('//BgpNeighborResp') do |x|
+    elements = x.elements
     bgp[node] = {
-      :peer_address => "#{x.at('peer_address').text}",
-      :state => "#{x.at('state').text}",
-      :last_state => "#{x.at('last_state').text}",
-      :last_state_at => "#{x.at('last_state_at').text}",
-      :peer_asn => "#{x.at('peer_asn').text}",
-      :encoding => "#{x.at('encoding').text}"
+      :peer_address => elements['peer_address'].text,
+      :state => elements['state'].text,
+      :last_state => elements['last_state'].text,
+      :last_state_at => elements['last_state_at'].text,
+      :peer_asn => elements['peer_asn'].text,
+      :encoding => elements['encoding'].text
     }
     node+=1
   end

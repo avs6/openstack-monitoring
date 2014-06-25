@@ -19,16 +19,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Requirments:
-  On Debian based systems: apt-get install ruby-nokogiri
-  On RedHat based systems: yum install rubygem-nokogiri
-
 =end
 
 # If ruby 1.8 use rubygem
 require 'rubygems' if RUBY_VERSION < '1.9.0'
 # Contrail API return xml output
-require 'nokogiri'
+require 'rexml/document'
 # Wrapper for net/{http,https}
 require 'open-uri'
 # For option managment
@@ -85,7 +81,6 @@ OptionParser.new { |opts|
   end
 }.parse!
 
-# i-ocnclc-0000.adm.int4.aub.cloudwatt.net
 begin
   open("http://#{cfg.host}:#{cfg.port}/Snh_AgentXmppConnectionStatusReq","User-Agent" => "#{PROG_NAME}/#{VERSION}") {|u| req = u.read }
 rescue
@@ -94,17 +89,18 @@ rescue
 end
 
 def parse_contrail_xml(data)
-  n = Nokogiri::XML(data)
+  document = REXML::Document.new(data)
   xmpp = Hash.new
   node = 0
-  n.search('//AgentXmppData').each do |x|
+  document.elements.each('//AgentXmppData') do |x|
+    elements = x.elements
     xmpp[node] = {
-      :controller_ip => "#{x.at('controller_ip').text}",
-      :state => "#{x.at('state').text}",
-      :last_state => "#{x.at('last_state').text}",
-      :last_state_at => "#{x.at('last_state_at').text}",
-      :cfg_controller => "#{x.at('cfg_controller').text}",
-      :mcast_controller => "#{x.at('mcast_controller').text}"
+      :controller_ip => elements['controller_ip'].text,
+      :state => elements['state'].text,
+      :last_state => elements['last_state'].text,
+      :last_state_at => elements['last_state_at'].text,
+      :cfg_controller => elements['cfg_controller'].text,
+      :mcast_controller => elements['mcast_controller'].text
     }
     node+=1
   end
