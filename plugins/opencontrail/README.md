@@ -48,6 +48,22 @@ Check vrouter's xmpp connection with controller peers
 >     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
 >     OK: Peer with 10.10.0.58 is Established (last state OpenSent at 2014-Jun-22 08:10:48.772736)
 
+## Check\_vrouter\_agent
+
+Check vrouter's agent state
+
+### Arguments
+
+* `-H, --host`: Hostname to run on (default: localhost)
+* `-p, --port`: Vrouter API port (default: 8085)
+* `-h, --help`: Display this help message
+
+### Usage
+
+* Check the state of the vrouter agent
+>     check_vrouter_agent -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net
+>     OK: i-ocnclc-0000.adm.int4.aub.cloudwatt.net in «InitDone» state
+
 # Check\_bgp\_neighbor
 
 Check controller's BGP neighbor
