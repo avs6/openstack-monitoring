@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+
+=begin
+
+OpenContrail checks (compat. with nagios exit codes)
+Copyright (C) 2014  Sebastien Badia <sebastien.badia@enovance.com>
+Sources and doc <https://github.com/sbadia/contrail-nagios/>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+=end
+
+# If ruby 1.8 use rubygem
+require 'rubygems' if RUBY_VERSION < '1.9.0'
+# Contrail API return xml output
+require 'rexml/document'
+# Wrapper for net/{http,https}
+require 'open-uri'
+# For option managment
+require 'ostruct'
+require 'optparse'
+
+# Monitoring return codes
+OK        = 0
+WARNING   = 1
+CRITICAL  = 2
+UNKNOWN   = 3
+DEPENDENT = 4
+
+# Script specific
+PROG_NAME = File.basename($0)
+VERSION   = '0.0.1'
+
+req = nil
+
+cfg = OpenStruct.new
+OptionParser.new { |opts|
+  opts.banner = "Usage: #{PROG_NAME} [options]"
+  opts.summary_indent = '  '
+  opts.version = VERSION
+  opts.summary_width = 28
+  opts.program_name = PROG_NAME
+  opts.separator ''
+  # default options
+  cfg.host = 'localhost'
+  cfg.port = '8085'
+
+  opts.on('-H','--host', "Hostname to run on (default: #{cfg.host})") do
+    cfg.host = ARGV[0]
+  end
+  opts.on('-p','--port',"Vrouter API port (default: #{cfg.port})") do
+    cfg.port = ARGV[0]
+  end
+  opts.on_tail('-h','--help','Display this help message') do
+    puts opts
+    exit OK
+  end
+}.parse!
+
+begin
+  open("http://#{cfg.host}:#{cfg.port}/Snh_AgentInitStateReq","User-Agent" => "#{PROG_NAME}/#{VERSION}") {|u| req = u.read }
+rescue
+  puts "CRITICAL: Could not connect to #{cfg.host}:#{cfg.port} (please check)"
+  exit CRITICAL
+end
+
+def parse_contrail_xml(data)
+  document = REXML::Document.new(data)
+  document.elements.each('//AgentInitState') do |x|
+    elements = x.elements
+    return {:state => elements['state'].text}
+  end
+end # def:: parse_contrail_xml(data)
+
+def nagios_exit(data,cfg)
+  case data[:state]
+  when 'InitDone'
+    puts "OK: #{cfg.host} in «#{data[:state]}» state"
+    exit OK
+  else
+    puts "CRITICAL: #{cfg.host} in «#{data[:state]}» state"
+    exit CRITICAL
+  end
+  return ok
+end # def:: nagios_display(data,nodeid)
+
+nagios_exit(parse_contrail_xml(req),cfg)
+
+# vi:ft=ruby
