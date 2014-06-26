@@ -44,6 +44,7 @@ VERSION   = '0.0.1'
 
 req = nil
 nodeok = 0
+ctrl = 0
 
 cfg = OpenStruct.new
 OptionParser.new { |opts|
@@ -72,7 +73,7 @@ OptionParser.new { |opts|
   opts.on('-m','--mcast-ctrl',"Check only mcast-controller (default: #{cfg.mcast})") do
     cfg.mcast = true
   end
-  opts.on('-i','--ip-ctrl',"Check only this controller IP (default: #{cfg.ip})") do
+  opts.on('-i','--ip-ctrl(s)',"Check this controller IPs (coma separated) (default: #{cfg.ip})") do
     cfg.ip = ARGV[0]
   end
   opts.on_tail('-h','--help','Display this help message') do
@@ -161,7 +162,10 @@ if cfg.ctrl
 elsif cfg.mcast
   nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:mcast_controller,'Yes'),nodeok),cfg)
 elsif cfg.ip
-  nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:controller_ip,cfg.ip),nodeok),cfg)
+  cfg.ip.split(',').each do |ctrl_ip|
+    ctrl=+nagios_display(vrouter,select_node(vrouter,:controller_ip,ctrl_ip),nodeok)
+  end
+  nagios_exit(vrouter.length,ctrl,cfg)
 else
   vrouter.each_key do |k|
     nodeok=+nagios_display(vrouter,k,nodeok)
