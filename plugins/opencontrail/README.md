@@ -61,6 +61,7 @@ Check vrouter's agent state
 ### Usage
 
 * Check the state of the vrouter agent
+
 >     check_vrouter_agent -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net
 >     OK: i-ocnclc-0000.adm.int4.aub.cloudwatt.net in «InitDone» state
 
