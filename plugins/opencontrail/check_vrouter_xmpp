@@ -44,7 +44,6 @@ VERSION   = '0.0.1'
 
 req = nil
 nodeok = 0
-ctrl = 0
 
 cfg = OpenStruct.new
 OptionParser.new { |opts|
@@ -112,7 +111,15 @@ def display_peer(data,nodeid)
   return "Peer with #{data[nodeid][:controller_ip]} is #{data[nodeid][:state]} (last state #{data[nodeid][:last_state]} at #{data[nodeid][:last_state_at]})"
 end # def:: display_peer(data,nodeid)
 
+def isnt_number(n)
+  false if Float(n) rescue true
+end
+
 def nagios_display(data,nodeid,ok)
+  if isnt_number(nodeid)
+    puts 'Please check your configuration'
+    exit UNKNOWN
+  end
   case data[nodeid][:state]
   when 'Established'
     puts "OK: #{display_peer(data,nodeid)}"
@@ -128,8 +135,10 @@ def nagios_display(data,nodeid,ok)
 end # def:: nagios_display(data,nodeid)
 
 def nagios_exit(length,numok,cfg)
-  if cfg.ctrl or cfg.mcast or cfg.ip
+  if cfg.ctrl or cfg.mcast
     length = 1
+  elsif cfg.ip
+    length = cfg.ip.split(',').length
   end
   if numok == length
     exit OK
@@ -143,13 +152,10 @@ def nagios_exit(length,numok,cfg)
 end # def:: nagios_exit(length,numok)
 
 def select_node(data,key,value)
-  data.each do |k,v|
-    if v.has_key?(key)
-      if v[key] == value
+  data.each_key do |k|
+    if data[k].has_key?(key)
+      if data[k][key] == value
         return k
-      else
-        puts "UNKNOWN: #{value} not found, please check your configuration"
-        exit UNKNOWN
       end
     end
   end
@@ -163,9 +169,9 @@ elsif cfg.mcast
   nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:mcast_controller,'Yes'),nodeok),cfg)
 elsif cfg.ip
   cfg.ip.split(',').each do |ctrl_ip|
-    ctrl=+nagios_display(vrouter,select_node(vrouter,:controller_ip,ctrl_ip),nodeok)
+    nodeok=+nagios_display(vrouter,select_node(vrouter,:controller_ip,ctrl_ip),nodeok)
   end
-  nagios_exit(vrouter.length,ctrl,cfg)
+  nagios_exit(vrouter.length,nodeok,cfg)
 else
   vrouter.each_key do |k|
     nodeok=+nagios_display(vrouter,k,nodeok)
