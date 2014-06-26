@@ -21,7 +21,7 @@ Check vrouter's xmpp connection with controller peers
 * `-p, --port`: Vrouter API port (default: 8085)
 * `-c, --cfg-ctrl`: Check only cfg-controller (default: false)
 * `-m, --mcast-ctrl`: Check only mcast-controller (default: false)
-* `-i, --ip-ctrl`: Check only this controller IP (default: false)
+* `-i, --ip-ctrl(s)`: Check this controller IPs (default: false)
 * `-h, --help`: Display this help message
 
 ### Usage
@@ -30,9 +30,10 @@ Check vrouter's xmpp connection with controller peers
 >     check_vrouter_xmpp
 >     UNKNOWN: Could not connect to localhost:8085 (please check)
 
-* Check only the xmpp connection with `10.10.0.58` peer controller IP
->     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -i 10.10.0.58
+* Check only the xmpp connection with `10.10.0.58` and `10.10.0.57` peer controller IP
+>     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -i 10.10.0.58,10.10.0.57
 >     OK: Peer with 10.10.0.58 is Established (last state OpenSent at 2014-Jun-22 08:10:48.772736)
+>     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-25 20:08:29.642435)
 
 * Check only the xmpp connection with the config controller peer
 >     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -c
@@ -55,9 +56,8 @@ Check controller's BGP neighbor
 
 * `-H, --host`: Hostname to run on (default: localhost)
 * `-p, --port`: Controller API port (default: 8083)
-* `-a, --peer-asn`: Check only this peer ASN (default: false)
-* `-t, --peer-type`: Check only this peer type (bgp/xmpp) (default: false)
-* `-i, --peer-ip`: Check only this peer IP (default: false)
+* `-a, --peer-asn(s)`: Check only this peer ASN (default: false)
+* `-i, --peer-ip(s)`: Check only this peer IP (default: false)
 * `-h, --help`: Display this help message
 
 ### Usage
@@ -66,13 +66,19 @@ Check controller's BGP neighbor
 >     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940
 >     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
 
-* Check a specific protocol (bgp/xmpp)
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -t bgp
->     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
+* Check two specific ASN
+>     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940,64516
+>     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-25 18:59:37.250093)
+>     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established (last state OpenConfirm at 2014-Jun-25 19:02:47.358415)
 
 * Check a specific peer
 >     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9
 >     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
+
+* Check a list of specific peer
+>     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9,10.10.0.58
+>     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
+>     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established (last state OpenConfirm at 2014-Jun-25 19:02:47.358415)
 
 * Check all controller sessions (warning if one session is down, and critical if all are down)
 >     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net
