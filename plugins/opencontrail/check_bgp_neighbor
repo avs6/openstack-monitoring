@@ -107,7 +107,15 @@ def display_peer(data,nodeid)
   return "Peer with #{data[nodeid][:peer_address]} AS#{data[nodeid][:peer_asn]} (#{data[nodeid][:encoding]}) is #{data[nodeid][:state]} (last state #{data[nodeid][:last_state]} at #{data[nodeid][:last_state_at]})"
 end # def:: display_peer(data,nodeid)
 
+def isnt_number(n)
+  false if Float(n) rescue true
+end
+
 def nagios_display(data,nodeid,ok)
+  if isnt_number(nodeid)
+    puts 'Please check your configuration'
+    exit UNKNOWN
+  end
   case data[nodeid][:state]
   when 'Established'
     puts "OK: #{display_peer(data,nodeid)}"
@@ -123,8 +131,12 @@ def nagios_display(data,nodeid,ok)
 end # def:: nagios_display(data,nodeid)
 
 def nagios_exit(length,numok,cfg)
-  if cfg.ctrl or cfg.mcast or cfg.peer
+  if cfg.ctrl or cfg.mcast
     length = 1
+  elsif cfg.asn
+    length = cfg.asn.split(',').length
+  elsif cfg.peer
+    length = cfg.peer.split(',').length
   end
   if numok == length
     exit OK
@@ -138,13 +150,10 @@ def nagios_exit(length,numok,cfg)
 end # def:: nagios_exit(length,numok)
 
 def select_node(data,key,value)
-  data.each do |k,v|
-    if v.has_key?(key)
-      if v[key] == value
+  data.each_key do |k|
+    if data[k].has_key?(key)
+      if data[k][key] == value
         return k
-      else
-        puts "UNKNOWN: #{value} not found, please check your configuration"
-        exit UNKNOWN
       end
     end
   end
@@ -154,10 +163,14 @@ controller = parse_contrail_xml(req)
 
 if cfg.asn
   cfg.asn.split(',').each do |as_number|
-    nagios_exit(controller.length,nagios_display(controller,select_node(controller,:peer_asn,as_number),nodeok),cfg)
+    nodeok=+nagios_display(controller,select_node(controller,:peer_asn,as_number),nodeok)
   end
+  nagios_exit(controller.length,nodeok,cfg)
 elsif cfg.peer
-  nagios_exit(controller.length,nagios_display(controller,select_node(controller,:peer_address,cfg.peer),nodeok),cfg)
+  cfg.peer.split(',').each do |peer_ip|
+  nodeok=+nagios_display(controller,select_node(controller,:peer_address,peer_ip),nodeok)
+  end
+  nagios_exit(controller.length,nodeok,cfg)
 else
   controller.each_key do |k|
     nodeok=+nagios_display(controller,k,nodeok)
