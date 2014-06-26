@@ -40,7 +40,7 @@ DEPENDENT = 4
 
 # Script specific
 PROG_NAME = File.basename($0)
-VERSION   = '0.0.1'
+PROG_VERSION   = '0.0.1'
 
 req = nil
 nodeok = 0
@@ -49,7 +49,7 @@ cfg = OpenStruct.new
 OptionParser.new { |opts|
   opts.banner = "Usage: #{PROG_NAME} [options]"
   opts.summary_indent = '  '
-  opts.version = VERSION
+  opts.version = PROG_VERSION
   opts.summary_width = 28
   opts.program_name = PROG_NAME
   opts.separator ''
@@ -82,7 +82,7 @@ OptionParser.new { |opts|
 }.parse!
 
 begin
-  open("http://#{cfg.host}:#{cfg.port}/Snh_AgentXmppConnectionStatusReq","User-Agent" => "#{PROG_NAME}/#{VERSION}") {|u| req = u.read }
+  open("http://#{cfg.host}:#{cfg.port}/Snh_AgentXmppConnectionStatusReq","User-Agent" => "#{PROG_NAME}/#{PROG_VERSION}") {|u| req = u.read }
 rescue
   puts "CRITICAL: Could not connect to #{cfg.host}:#{cfg.port} (please check)"
   exit CRITICAL
