@@ -57,6 +57,7 @@ OptionParser.new { |opts|
   cfg.host = 'localhost'
   cfg.port = '8083'
   cfg.asn = false
+  cfg.peertype = 'bgp'
   cfg.peer = false
 
   opts.on('-H','--host', "Hostname to run on (default: #{cfg.host})") do
@@ -67,6 +68,9 @@ OptionParser.new { |opts|
   end
   opts.on('-a','--peer-asn(s)',"Check only this peer ASN (default: #{cfg.asn})") do
     cfg.asn = ARGV[0]
+  end
+  opts.on('-t','--peer-type',"Check only this peer type (bgp/xmpp) (default: #{cfg.peertype})") do
+    cfg.peertype = ARGV[0]
   end
   opts.on('-i','--peer-ip(s)',"Check only this peer IP (default: #{cfg.peer})") do
     cfg.peer = ARGV[0]
@@ -171,6 +175,8 @@ elsif cfg.peer
   nodeok=+nagios_display(controller,select_node(controller,:peer_address,peer_ip),nodeok)
   end
   nagios_exit(controller.length,nodeok,cfg)
+elsif cfg.peertype
+  nagios_exit(controller.length,nagios_display(controller,select_node(controller,:encoding,cfg.peertype.upcase),nodeok),cfg)
 else
   controller.each_key do |k|
     nodeok=+nagios_display(controller,k,nodeok)
