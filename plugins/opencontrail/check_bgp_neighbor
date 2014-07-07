@@ -57,7 +57,7 @@ OptionParser.new { |opts|
   cfg.host = 'localhost'
   cfg.port = '8083'
   cfg.asn = false
-  cfg.peertype = 'bgp'
+  cfg.peertype = false
   cfg.peer = false
 
   opts.on('-H','--host', "Hostname to run on (default: #{cfg.host})") do
