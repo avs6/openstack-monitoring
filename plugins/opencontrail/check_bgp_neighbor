@@ -96,6 +96,9 @@ rescue
   exit CRITICAL
 end
 
+# Parse OpenContrail controller XML and return a node hash
+# @param data [String] the XML data to parse
+# @return [hash] the object converted to a Ruby hash
 def parse_contrail_xml(data)
   document = REXML::Document.new(data)
   bgp = Hash.new
@@ -121,6 +124,12 @@ def isnt_number(n)
   false if Float(n) rescue true
 end
 
+# Display monitoring infos
+# @param data [hash] the controller hash (node number and parameters)
+# @param nodeid [integer] controller node id
+# @param ok [integer] number of ok nodes
+# @param cfg [object] Data strucure of configuration options
+# @return nothing (diplay/exit only)
 def nagios_display(data,nodeid,ok,cfg)
   if isnt_number(nodeid)
     puts 'Please check your configuration'
@@ -140,6 +149,11 @@ def nagios_display(data,nodeid,ok,cfg)
   return ok
 end # def:: nagios_display(data,nodeid)
 
+# Monitoring exit switch
+# @param length [integer] num of controller nodes
+# @param numok [integer] number of ok nodes
+# @param cfg [object] Data strucure of configuration options
+# @return nothing (diplay/exit only)
 def nagios_exit(length,numok,cfg)
   if cfg.ctrl or cfg.mcast
     length = 1
@@ -160,6 +174,11 @@ def nagios_exit(length,numok,cfg)
   end
 end # def:: nagios_exit(length,numok)
 
+# Search and select a matching node according input parameters
+# @param data [hash] the controller hash (node number and parameters)
+# @param key [object] the matching key to search
+# @param value [string] the expected string to match
+# @return [integer] the id of matching node
 def select_node(data,key,value)
   data.each_key do |k|
     if data[k].has_key?(key)
@@ -170,6 +189,11 @@ def select_node(data,key,value)
   end
 end # def:: select_node(data,key,value)
 
+# Search and select a group of matching nodes according input parameters
+# @param data [hash] the controller hash (node number and parameters)
+# @param key [object] the matching key to search
+# @param value [string] the expected string to match
+# @return [array] the ids of matching nodes
 def select_nodes(data,key,value)
   out = []
   data.each_key do |k|
