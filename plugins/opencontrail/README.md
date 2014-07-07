@@ -6,13 +6,15 @@
 * CloudWatt [related US](https://jira.corp.cloudwatt.com/browse/INGPRD-1100).
 * CloudWatt [monitoring documentation](https://wiki.corp.cloudwatt.com/wiki/Op%C3%A9rations/Monitoring_Openstack)
 * Wikipage [cloudwatt wiki](https://wiki.corp.cloudwatt.com/wiki/Opérations/Monitoring_OpenContrail)
-** `pandoc -f markdown -t mediawiki -s README.md -o README.mediawiki`
+ * `pandoc -f markdown -t mediawiki -s README.md -o README.mediawiki`
 
 ## Requirements
 
 * ruby
 
-## Check\_vrouter\_xmpp
+## Checks
+
+### Check\_vrouter\_xmpp
 
 Check vrouter's xmpp connection with controller peers
 
@@ -54,7 +56,7 @@ Check vrouter's xmpp connection with controller peers
 >     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
 >     OK: Peer with 10.10.0.58 is Established (last state OpenSent at 2014-Jun-22 08:10:48.772736)
 
-## Check\_vrouter\_agent
+### Check\_vrouter\_agent
 
 Check vrouter's agent state
 
@@ -71,7 +73,7 @@ Check vrouter's agent state
 >     check_vrouter_agent -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net
 >     OK: i-ocnclc-0000.adm.int4.aub.cloudwatt.net in «InitDone» state
 
-# Check\_bgp\_neighbor
+### Check\_bgp\_neighbor
 
 Check controller's BGP neighbor
 
@@ -87,34 +89,34 @@ Check controller's BGP neighbor
 
 * Check a specific ASN
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940
->     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
+>     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940 -v
+>     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
 
 * Check two specific ASN
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940,64516
->     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-25 18:59:37.250093)
->     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established (last state OpenConfirm at 2014-Jun-25 19:02:47.358415)
+>     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940,64516 -v
+>     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
+>     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established
 
 * Check a specific peer
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9
->     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
+>     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9 -v
+>     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
 
 * Check a list of specific peer
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9,10.10.0.58
->     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
->     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established (last state OpenConfirm at 2014-Jun-25 19:02:47.358415)
+>     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9,10.10.0.58 -v
+>     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
+>     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established
 
 * Check all controller sessions (warning if one session is down, and critical if all are down)
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net
->     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:13:17.284153)
->     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established (last state OpenConfirm at 2014-Jun-23 07:12:17.260555)
->     OK: Peer with 10.10.1.57 AS0 (XMPP) is Established (last state Active at 2014-Jun-23 07:11:12.342093)
->     OK: Peer with 10.10.1.55 AS0 (XMPP) is Established (last state Active at 2014-Jun-23 07:11:10.433553)
->     OK: Peer with 10.10.1.56 AS0 (XMPP) is Established (last state Active at 2014-Jun-23 07:11:13.863633)
+>     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -v
+>     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
+>     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established
+>     OK: Peer with 10.10.1.57 AS0 (XMPP) is Established
+>     OK: Peer with 10.10.1.55 AS0 (XMPP) is Established
+>     OK: Peer with 10.10.1.56 AS0 (XMPP) is Established
 
 * Check localhost on port 8083
 
