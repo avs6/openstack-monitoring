@@ -163,6 +163,18 @@ def select_node(data,key,value)
   end
 end # def:: select_node(data,key,value)
 
+def select_nodes(data,key,value)
+  out = []
+  data.each_key do |k|
+    if data[k].has_key?(key)
+      if data[k][key] == value
+        out << k
+      end
+    end
+  end
+  return out
+end
+
 controller = parse_contrail_xml(req)
 
 if cfg.asn
@@ -176,7 +188,11 @@ elsif cfg.peer
   end
   nagios_exit(controller.length,nodeok,cfg)
 elsif cfg.peertype
-  nagios_exit(controller.length,nagios_display(controller,select_node(controller,:encoding,cfg.peertype.upcase),nodeok),cfg)
+  peers = select_nodes(controller,:encoding,cfg.peertype.upcase)
+  peers.each do |p|
+    nodeok=+nagios_display(controller,p,nodeok)
+  end
+  nagios_exit(peers.length,nodeok,cfg)
 else
   controller.each_key do |k|
     nodeok=+nagios_display(controller,k,nodeok)
