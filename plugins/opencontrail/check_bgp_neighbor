@@ -79,6 +79,10 @@ OptionParser.new { |opts|
   opts.on('-v','--verbose',"Display all messages (default: #{cfg.verbose})") do
     cfg.verbose = true
   end
+  opts.on('-V','--version',"Display version") do
+    puts PROG_VERSION
+    exit OK
+  end
   opts.on_tail('-h','--help','Display this help message') do
     puts opts
     exit OK
