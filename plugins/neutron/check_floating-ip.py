@@ -42,12 +42,12 @@ STATE_UNKNOWN = 3
 
 
 def script_unknown(msg):
-    sys.stderr.write("UNKNOWN - %s\n" % msg)
+    sys.stderr.write("UNKNOWN - %s (UTC: %s)\n" % (msg, datetime.utcnow()))
     sys.exit(STATE_UNKNOWN)
 
 
 def script_critical(msg):
-    sys.stderr.write("CRITICAL - %s\n" % msg)
+    sys.stderr.write("CRITICAL - %s (UTC: %s)\n" % (msg, datetime.utcnow()))
     sys.exit(STATE_CRITICAL)
 
 
