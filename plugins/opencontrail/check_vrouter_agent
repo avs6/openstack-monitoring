@@ -79,6 +79,9 @@ rescue
   exit CRITICAL
 end
 
+# Parse OpenContrail controller XML and return a node hash
+# @param data [String] the XML data to parse
+# @return [hash] the object converted to a Ruby hash
 def parse_contrail_xml(data)
   document = REXML::Document.new(data)
   document.elements.each('//AgentInitState') do |x|
@@ -87,13 +90,17 @@ def parse_contrail_xml(data)
   end
 end # def:: parse_contrail_xml(data)
 
+# Monitoring exit switch
+# @param data [hash] Vrouter data hash
+# @param cfg [object] Data strucure of configuration options
+# @return nothing (diplay/exit only)
 def nagios_exit(data,cfg)
   case data[:state]
   when 'InitDone'
-    puts "OK: #{cfg.host} in «#{data[:state]}» state"
+    puts "OK: #{cfg.host} in #{data[:state]} state"
     exit OK
   else
-    puts "CRITICAL: #{cfg.host} in «#{data[:state]}» state"
+    puts "CRITICAL: #{cfg.host} in #{data[:state]} state"
     exit CRITICAL
   end
   return ok
