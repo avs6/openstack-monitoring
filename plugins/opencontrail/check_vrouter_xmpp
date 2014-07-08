@@ -75,6 +75,13 @@ OptionParser.new { |opts|
   opts.on('-i','--ip-ctrl(s)',"Check this controller IPs (coma separated) (default: #{cfg.ip})") do
     cfg.ip = ARGV[0]
   end
+  opts.on('-v','--verbose',"Display all messages (default: #{cfg.verbose})") do
+    cfg.verbose = true
+  end
+  opts.on('-V','--version',"Display version") do
+    puts PROG_VERSION
+    exit OK
+  end
   opts.on_tail('-h','--help','Display this help message') do
     puts opts
     exit OK
@@ -122,7 +129,7 @@ def nagios_display(data,nodeid,ok)
   end
   case data[nodeid][:state]
   when 'Established'
-    puts "OK: #{display_peer(data,nodeid)}"
+    puts "OK: #{display_peer(data,nodeid)}" if cfg.verbose
     ok+=1
   when 'OpenSent'
     puts "WARNING: #{display_peer(data,nodeid)}"
