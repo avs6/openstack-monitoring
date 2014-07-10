@@ -129,8 +129,9 @@ end
 # @param data [hash] the controller hash (node number and parameters)
 # @param nodeid [integer] controller node id
 # @param ok [integer] number of ok nodes
+# @param cfg [object] Data strucure of configuration options
 # @return nothing (diplay/exit only)
-def nagios_display(data,nodeid,ok)
+def nagios_display(data,nodeid,ok,cfg)
   if isnt_number(nodeid)
     puts 'Please check your configuration'
     exit UNKNOWN
@@ -190,17 +191,17 @@ end # def:: select_node(data,key,value)
 vrouter = parse_contrail_xml(req)
 
 if cfg.ctrl
-  nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:cfg_controller,'Yes'),nodeok),cfg)
+  nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:cfg_controller,'Yes'),nodeok,cfg),cfg)
 elsif cfg.mcast
-  nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:mcast_controller,'Yes'),nodeok),cfg)
+  nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:mcast_controller,'Yes'),nodeok,cfg),cfg)
 elsif cfg.ip
   cfg.ip.split(',').each do |ctrl_ip|
-    nodeok=+nagios_display(vrouter,select_node(vrouter,:controller_ip,ctrl_ip),nodeok)
+    nodeok=+nagios_display(vrouter,select_node(vrouter,:controller_ip,ctrl_ip,cfg),nodeok)
   end
   nagios_exit(vrouter.length,nodeok,cfg)
 else
   vrouter.each_key do |k|
-    nodeok=+nagios_display(vrouter,k,nodeok)
+    nodeok=+nagios_display(vrouter,k,nodeok,cfg)
   end
   nagios_exit(vrouter.length,nodeok,cfg)
 end
