@@ -162,7 +162,7 @@ def nagios_exit(length,numok,cfg)
   elsif cfg.peer
     length = cfg.peer.split(',').length
   end
-  puts "[#{Time.now}] Peers connected #{numok}/#{length}"
+  puts "[#{Time.now}] Peers connected #{numok}/#{length}" if ! cfg.verbose
   if numok == length
     exit OK
   elsif (numok < length and numok != 0)
