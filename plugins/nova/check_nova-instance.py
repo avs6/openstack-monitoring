@@ -156,12 +156,13 @@ class Novautils:
                 self.msgs.append("Cannot find the flavor %s (%s)"
                                  % (flavor_name, e))
 
-    def create_instance(self, instance_name):
+    def create_instance(self, instance_name, availability_zone=None):
         if not self.msgs:
             try:
                 self.instance = self.nova_client.servers.create(
                     name=instance_name,
                     image=self.image,
+                    availability_zone=availability_zone,
                     flavor=self.flavor)
             except Exception as e:
                 self.msgs.append("Cannot create the vm %s (%s)"
@@ -171,7 +172,10 @@ class Novautils:
         if not self.msgs:
             timer = 0
             while self.instance.status != "ACTIVE":
-                if timer >= timeout:
+                if self.instance.status in ["ERROR", "UNKNOWN"]:
+                    self.msgs.append("They were a problem creating the vm.")
+                    break
+                elif timer >= timeout:
                     self.msgs.append("Cannot create the vm")
                     break
                 time.sleep(1)
@@ -276,6 +280,10 @@ parser.add_argument('--instance_name', metavar='instance_name', type=str,
                     help="Instance name to use (%s by default)"
                     % default_instance_name)
 
+parser.add_argument('--availability_zone', metavar='availability_zone', type=str,
+                    default=None,
+                    help="Specify the zone and optionally the host (using zone:host syntax)")
+
 parser.add_argument('--force_delete', action='store_true',
                     help='If matching instances are found delete them and add'
                     + 'a notification in the message instead of getting out'
@@ -334,7 +342,7 @@ util.check_existing_instance(args.instance_name,
                              args.timeout_delete)
 util.get_image(args.image_name)
 util.get_flavor(args.flavor_name)
-util.create_instance(args.instance_name)
+util.create_instance(args.instance_name, args.availability_zone)
 util.instance_ready(args.timeout)
 util.delete_instance()
 util.instance_deleted(args.timeout)
