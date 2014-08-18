@@ -27,9 +27,12 @@ import sys
 import argparse
 from novaclient.client import Client
 from novaclient import exceptions
+import glanceclient.client as glance
+from keystoneclient.v2_0 import client as keystone
 import time
 import logging
 import urlparse
+import re
 from datetime import datetime
 
 STATE_OK = 0
@@ -65,8 +68,9 @@ def totimestamp(dt=None, epoch=datetime(1970, 1, 1)):
 
 
 class Novautils:
-    def __init__(self, nova_client):
+    def __init__(self, nova_client, glance_client):
         self.nova_client = nova_client
+        self.glance_client = glance_client
         self.msgs = []
         self.start = totimestamp()
         self.notifications = ["instance_creation_time=%s" % self.start]
@@ -140,10 +144,16 @@ class Novautils:
                     + "Won't create test instance. "
                     + "Please check and delete.")
 
-    def get_image(self, image_name):
+    def get_image(self, image_name, props):
         if not self.msgs:
             try:
-                self.image = self.nova_client.images.find(name=image_name)
+                self.image = list(
+                                 self.glance_client.images.list(
+                                     name=image_name,
+                                     filters={'properties': props,
+                                              'member_status': 'all'}
+                                 )
+                             )[0]
             except Exception as e:
                 self.msgs.append("Cannot find the image %s (%s)"
                                  % (image_name, e))
@@ -270,6 +280,10 @@ parser.add_argument('--image_name', metavar='image_name', type=str,
                     help="Image name to use (%s by default)"
                     % default_image_name)
 
+parser.add_argument('--image_property', metavar='property', type=str,
+                    default=[], action="append",
+                    help='Image property to search')
+
 parser.add_argument('--flavor_name', metavar='flavor_name', type=str,
                     default=default_flavor_name,
                     help="Flavor name to use (%s by default)"
@@ -311,22 +325,62 @@ args = parser.parse_args()
 # this shouldn't raise any exception as no connection is done when
 # creating the object.  But It may change, so I catch everything.
 try:
+    ksclient = keystone.Client(username=args.username,
+                               tenant_name=args.tenant,
+                               password=args.password,
+                               auth_url=args.auth_url)
+
+    nova_endpoint = ksclient.service_catalog.url_for(
+                        service_type='compute',
+                        endpoint_type=args.endpoint_type
+                    )
+
     nova_client = Client(args.api_version,
                          username=args.username,
+                         api_key=ksclient.auth_token,
                          project_id=args.tenant,
-                         api_key=args.password,
                          auth_url=args.auth_url,
+                         auth_token=ksclient.auth_token,
                          endpoint_type=args.endpoint_type,
+                         bypass_url=nova_endpoint,
                          http_log_debug=args.verbose)
+
+    glance_endpoint = ksclient.service_catalog.url_for(
+                          service_type='image',
+                          endpoint_type=args.endpoint_type
+                      )
+
+    # Strip version from the last component of endpoint if present
+    # Get rid of trailing '/' if present
+    if glance_endpoint.endswith('/'):
+        glance_endpoint = glance_endpoint[:-1]
+    url_bits = glance_endpoint.split('/')
+    # regex to match 'v1' or 'v2.0' etc
+    if re.match('v\d+\.?\d*', url_bits[-1]):
+        glance_endpoint = '/'.join(url_bits[:-1])
+
+    glance_client = glance.Client('1',
+                                  endpoint=glance_endpoint,
+                                  endpoint_type=args.endpoint_type,
+                                  token=ksclient.auth_token)
+
 except Exception as e:
     script_critical("Error creating nova communication object: %s\n" % e)
 
-util = Novautils(nova_client)
+util = Novautils(nova_client, glance_client)
 
 if args.verbose:
     ch = logging.StreamHandler()
     nova_client.client._logger.setLevel(logging.DEBUG)
     nova_client.client._logger.addHandler(ch)
+
+props = {}
+try:
+    for prop in args.image_property:
+        name, value = prop.split('=')
+        props[name.lower()] = value
+except ValueError:
+    script_critical("Image property must be in format key=value")
 
 # Initiate the first connection and catch error.
 util.check_connection()
@@ -340,7 +394,8 @@ if args.endpoint_url:
 util.check_existing_instance(args.instance_name,
                              args.force_delete,
                              args.timeout_delete)
-util.get_image(args.image_name)
+
+util.get_image(args.image_name, props)
 util.get_flavor(args.flavor_name)
 util.create_instance(args.instance_name, args.availability_zone)
 util.instance_ready(args.timeout)
