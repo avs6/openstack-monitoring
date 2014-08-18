@@ -147,13 +147,19 @@ class Novautils:
     def get_image(self, image_name, props):
         if not self.msgs:
             try:
-                self.image = list(
-                                 self.glance_client.images.list(
-                                     name=image_name,
-                                     filters={'properties': props,
-                                              'member_status': 'all'}
-                                 )
-                             )[0]
+                images = list(
+                             self.glance_client.images.list(
+                                 name=image_name,
+                                 filters={'properties': props,
+                                          'member_status': 'all'}
+                             )
+                         )
+
+                if len(images) > 1:
+                    raise Exception("Image must be unique")
+
+                return images[0]
+
             except Exception as e:
                 self.msgs.append("Cannot find the image %s (%s)"
                                  % (image_name, e))
@@ -396,11 +402,13 @@ util.check_existing_instance(args.instance_name,
                              args.timeout_delete)
 
 util.get_image(args.image_name, props)
+"""
 util.get_flavor(args.flavor_name)
 util.create_instance(args.instance_name, args.availability_zone)
 util.instance_ready(args.timeout)
 util.delete_instance()
 util.instance_deleted(args.timeout)
+"""
 
 if util.msgs:
     script_critical(", ".join(util.msgs))
