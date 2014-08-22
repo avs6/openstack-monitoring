@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/usr/bin/python
 #
 # Ceilometer API monitoring script
 #
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright 2014 eNovance <licensing@enovance.com>
 #
 # Author: Emilien Macchi <emilien.macchi@enovance.com>
+# Author: Sylvain Baubeau <sylvain.baubeau@enovance.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,99 +21,77 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-set -e
+from ceilometerclient.client import get_client
+from ceilometerclient.exc import CommunicationError
 
-STATE_OK=0
-STATE_WARNING=1
-STATE_CRITICAL=2
-STATE_UNKNOWN=3
-STATE_DEPENDENT=4
+import sys
+import argparse
+import time
 
-usage ()
-{
-    echo "Usage: $0 [OPTIONS]"
-    echo " -u        Username"
-    echo " -p        Password"
-    echo " -t        Tenant"
-    echo " -a        Authentication URL"
-    echo " -e        Ceilometer URL"
-    echo " -c        Critical response time"
-    echo " -w        Warning response time"
-    echo " -h        Get help"
-}
+STATE_OK = 0
+STATE_WARNING = 1
+STATE_CRITICAL = 2
+STATE_UNKNOWN = 3
 
-while getopts 'h:u:p:t:a:e:w:c:' OPTION
-do
-    case $OPTION in
-        u)
-            OS_USERNAME=$OPTARG
-            ;;
-        p)
-            OS_PASSWORD=$OPTARG
-            ;;
-        t)
-            OS_TENANT_NAME=$OPTARG
-            ;;
-        a)
-            OS_AUTH_URL=$OPTARG
-            ;;
-        e)
-            CEILOMETER_URL=$OPTARG
-            ;;
-        c)
-            CRITICAL=$OPTARG
-            ;;
-        w)
-            WARN=$OPTARG
-            ;;
-        h)
-            usage
-            exit 0
-            ;;
-        *)
-            usage
-            exit 1
-            ;;
-    esac
-done
+parser = argparse.ArgumentParser()
 
-if [[ -z $OS_USERNAME ]] || [[ -z $OS_PASSWORD ]] || [[ -z $OS_TENANT_NAME ]] || [[ -z $OS_AUTH_URL ]] || [[ -z $CEILOMETER_URL ]]
-then
-     usage
-     exit 1
-fi
+parser.add_argument('-a', '--auth_url', metavar='URL', type=str,
+                    default='http://localhost:5000/v2.0',
+                    help='Keystone URL')
 
-[ -z $WARN ] && WARN=15
-[ -z $CRITICAL ] && CRITICAL=30
+parser.add_argument('-u', '--username', metavar='username', type=str,
+                    default='username',
+                    help='username to use for authentication')
 
-if ! which ceilometer >/dev/null 2>&1
-then
-    echo "python-ceilometerclient is not installed."
-    exit $STATE_UNKNOWN
-fi
+parser.add_argument('-p', '--password', metavar='password', type=str,
+                    default='password',
+                    help='password to use for authentication')
 
-CMDLINE="ceilometer --os-username $OS_USERNAME --os-password $OS_PASSWORD --os-tenant-name $OS_TENANT_NAME --os-auth-url $OS_AUTH_URL --ceilometer-url $CEILOMETER_URL meter-list"
-STARTTIME=$(date +%s)
+parser.add_argument('-t', '--tenant', metavar='tenant', type=str,
+                    default='admin',
+                    help='tenant name to use for authentication')
 
-if ! KEY=$($CMDLINE 2>/dev/null)
-then
-    echo "Unable to list meters"
-    exit $STATE_CRITICAL
-fi
+parser.add_argument('-e', '--endpoint_url', metavar='endpoint_url', type=str,
+                    dest='endpoint_url',
+                    help='Override the catalog endpoint.')
 
-ENDTIME=$(date +%s)
-TIMEDIFF=$(($ENDTIME-$STARTTIME))
+parser.add_argument('-y', metavar='endpoint_type', type=str,
+                    dest='endpoint_type', default="internalURL",
+                    help='Endpoint type in the catalog request.')
 
-if [ "$TIMEDIFF" -gt "$CRITICAL" ]; then
-    echo "Timeout while querying Ceilometer API"
-    exit $STATE_CRITICAL
-elif [ "$TIMEDIFF" -gt "$WARN" ]; then
-    STATUS=$STATE_WARNING
-else
-    STATUS=$STATE_OK
-fi
+parser.add_argument('-w', metavar='warning', type=int, default=15,
+                    dest='warning', help='Warning response time.')
 
-echo "Ceilometer API is working.|$TIMEDIFF"
+parser.add_argument('-c', metavar='critical', type=int, default=30,
+                    dest='critical', help='Critical response time.')
 
-exit $STATUS
+args = parser.parse_args()
 
+try:
+    client = get_client('2',
+                        os_username=args.username,
+                        os_tenant_name=args.tenant,
+                        os_password=args.password,
+                        os_auth_url=args.auth_url,
+                        os_endpoint_type=args.endpoint_type,
+                        timeout=args.critical)
+except Exception, e:
+    print "Fail to authenticate to ceilometer API"
+    sys.exit(STATE_CRITICAL)
+
+try:
+    start = time.time()
+    meters = client.meters.list()
+    end = time.time()
+except CommunicationError, e:
+    print "Timeout while querying Ceilometer API"
+    sys.exit(STATE_CRITICAL)
+except:
+    print "Failed to fetch meters"
+    sys.exit(STATE_CRITICAL)
+
+if end - start > args.warning:
+    print "Call took %d seconds" % int(end - start)
+    sys.exit(STATE_WARNING)
+
+sys.exit(STATE_OK)
