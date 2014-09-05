@@ -1,0 +1,53 @@
+heat_template_version: 2013-05-23
+
+description: CheckHeatTemplate
+
+parameters:
+  instance_type:
+    type: string
+    description: Instance type for the instance to be created
+    default: m1.small
+
+  image_id:
+    type: string
+    description: ID of the image to use for the instance
+
+  floating_network_id:
+    type: string
+    description: ID of the network to use for the instance
+
+resources:
+  my_network:
+    type: OS::Neutron::Net
+
+  private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: my_network }
+      cidr: 10.20.30.0/24
+      enable_dhcp: true
+
+  my_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: my_network }
+
+  my_vm:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: image_id }
+      flavor: { get_param: instance_type }
+      networks:
+        - port: { get_resource: my_port }
+
+  my_volume:
+    type: OS::Cinder::Volume
+    properties:
+      size: 2
+
+  my_volume_attachment:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      volume_id: { get_resource: my_volume }
+      instance_uuid: { get_resource: my_vm }
+      mountpoint: /dev/vdb
