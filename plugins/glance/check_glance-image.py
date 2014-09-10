@@ -42,7 +42,7 @@ class OpenstackUtils:
         self.keystone_client = keystone_client
         self.msgs = []
         self.start = totimestamp()
-        self.notifications = ["instance_creation_time=%s" % self.start]
+        self.notifications = ["image_creation_time=%s" % self.start]
         self.performances = []
         self.connection_done = False
         self.image = None
@@ -134,7 +134,7 @@ class OpenstackUtils:
             else:
                 self.msgs.append(
                     "Found '%s' present %d time(s). " % (image_name, count)
-                    + "Won't create test instance. "
+                    + "Won't create test image. "
                     + "Please check and delete.")
 
     def image_ready(self, timeout):
@@ -196,7 +196,7 @@ class OpenstackUtils:
         performance = ""
         if util.performances:
             performance = " ".join(util.performances)
-        print("OK - Nova instance spawned and deleted in %d seconds %s| time=%d %s"
+        print("OK - Glance image created and deleted in %d seconds %s| time=%d %s"
               % (duration, notification, duration, performance))
 
 
@@ -247,12 +247,12 @@ def collect_args():
 
     parser.add_argument('--timeout_delete', metavar='timeout_delete', type=int,
                         default=30,
-                        help='Max number of second to delete an existing instance'
+                        help='Max number of second to delete an existing image'
                         + '(30 by default).')
 
     parser.add_argument('--timeout', metavar='timeout', type=int,
                         default=30,
-                        help='Max number of second to create a instance'
+                        help='Max number of second to create an image'
                         + '(30 by default)')
 
     parser.add_argument('--verbose', action='store_true',
