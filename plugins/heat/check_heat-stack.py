@@ -116,6 +116,9 @@ parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
                     help='Endpoint type in the catalog request.'
                     + 'Public by default.')
 
+parser.add_argument('--stack_name', metavar='stack_name', type=str,
+                    help="Stack name to use")
+
 parser.add_argument('--image_name', metavar='image_name', type=str, 
                     help="Image name to use")
 
@@ -192,7 +195,12 @@ try:
     files, template = template_utils.get_template_contents(
                           template_file=args.template)
 
-    stack_name = "check_heat-stack-" + str(uuid.uuid4())
+    if args.stack_name:
+        if len(list(heat_client.stacks.list(filters={'name':args.stack_name}))):
+            script_critical("Stack %s already exists" % args.stack_name)
+        stack_name = args.stack_name
+    else:
+        stack_name = "check_heat-stack-" + str(uuid.uuid4())
 
     fields = {
         'stack_name': stack_name,
