@@ -83,9 +83,6 @@ def get_image(glance_client, image_name, properties):
                      )
                  )
 
-        if len(images) > 1:
-            raise Exception("Image must be unique")
-
         return images[0]
 
     except Exception as e:
