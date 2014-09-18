@@ -40,7 +40,7 @@ DEPENDENT = 4
 
 # Script specific
 PROG_NAME = File.basename($0)
-PROG_VERSION   = '1.0.0'
+PROG_VERSION   = '1.0.1'
 
 req = nil
 nodeok = 0
@@ -162,12 +162,12 @@ def nagios_exit(length,numok,cfg)
     length = cfg.ip.split(',').length
   end
   puts "[#{Time.now}] Peers connected #{numok}/#{length}" if ! cfg.verbose
-  if numok == length
-    exit OK
-  elsif (numok < length and numok != 0)
-    exit WARNING
-  elsif numok == 0
+  if ((numok.to_i == 0) or (length.to_i == 0))
     exit CRITICAL
+  elsif numok.to_i == length.to_i
+    exit OK
+  elsif numok.to_i < length.to_i
+    exit WARNING
   else
     exit UNKNOWN
   end
