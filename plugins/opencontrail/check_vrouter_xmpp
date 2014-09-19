@@ -40,7 +40,7 @@ DEPENDENT = 4
 
 # Script specific
 PROG_NAME = File.basename($0)
-PROG_VERSION   = '1.0.1'
+PROG_VERSION   = '1.0.2'
 
 req = nil
 nodeok = 0
@@ -196,7 +196,7 @@ elsif cfg.mcast
   nagios_exit(vrouter.length,nagios_display(vrouter,select_node(vrouter,:mcast_controller,'Yes'),nodeok,cfg),cfg)
 elsif cfg.ip
   cfg.ip.split(',').each do |ctrl_ip|
-    nodeok=+nagios_display(vrouter,select_node(vrouter,:controller_ip,ctrl_ip,cfg),nodeok)
+    nodeok=+nagios_display(vrouter,select_node(vrouter,:controller_ip,ctrl_ip),nodeok,cfg)
   end
   nagios_exit(vrouter.length,nodeok,cfg)
 else
