@@ -215,7 +215,7 @@ if cfg.asn
   nagios_exit(controller.length,nodeok,cfg)
 elsif cfg.peer
   cfg.peer.split(',').each do |peer_ip|
-  nodeok=+nagios_display(controller,select_node(controller,:peer_address,peer_ip),nodeok,cfg)
+    nodeok=+nagios_display(controller,select_node(controller,:peer_address,peer_ip),nodeok,cfg)
   end
   nagios_exit(controller.length,nodeok,cfg)
 elsif cfg.peertype
