@@ -158,9 +158,6 @@ class Novautils:
                              )
                          )
 
-                if len(images) > 1:
-                    raise Exception("Image must be unique")
-
                 self.image = images[0]
 
             except Exception as e:
