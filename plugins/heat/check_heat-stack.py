@@ -32,17 +32,29 @@ import time
 from datetime import datetime
 from heatclient import client as heat
 from glanceclient import client as glance
+from novaclient import client as nova
+from cinderclient import client as cinder
 from heatclient.common import template_utils
 from keystoneclient.v2_0 import client as keystone
+
 
 STATE_OK = 0
 STATE_WARNING = 1
 STATE_CRITICAL = 2
 STATE_UNKNOWN = 3
 
+
+class FailedDeletion(Exception): pass
+
+
 def script_critical(msg):
     sys.stderr.write("CRITICAL - %s (UTC: %s)\n" % (msg, datetime.utcnow()))
     sys.exit(STATE_CRITICAL)
+
+
+def script_warning(msg):
+    sys.stderr.write("WARNING - %s (UTC: %s)\n" % (msg, datetime.utcnow()))
+    sys.exit(STATE_WARNING)
 
 
 def parse_properties(properties):
@@ -65,12 +77,22 @@ def wait_for_completion(heat_client, stack_id, timeout):
         if stack.status == 'COMPLETE':
             break
         elif stack.status != 'IN_PROGRESS':
-            raise Exception('Stack is in %s state' % stack.status)
+            raise FailedDeletion('Stack is in %s state' % stack.status)
 
         time.sleep(5)
         spent_time += 5
 
     return spent_time
+
+
+def force_delete_resource(client, id):
+    try: client.delete(id)
+    except: pass
+    time.sleep(15)
+
+    try: client.force_delete(id)
+    except: pass
+    time.sleep(15)
 
 
 def get_image(glance_client, image_name, properties):
@@ -88,6 +110,27 @@ def get_image(glance_client, image_name, properties):
     except Exception as e:
         raise Exception("Cannot find the image %s (%s)"
                         % (image_name, e))
+
+
+def topological_sort(items):
+    provided = set()
+    while items:
+         remaining_items = []
+         emitted = False
+
+         for item, dependencies in items:
+             if dependencies.issubset(provided):
+                   yield item
+                   provided.add(item)
+                   emitted = True
+             else:
+                   remaining_items.append( (item, dependencies) )
+
+         if not emitted:
+             raise TopologicalSortFailure()
+
+         items = remaining_items
+
 
 parser = argparse.ArgumentParser(
     description='Check an OpenStack Keystone server.')
@@ -141,6 +184,9 @@ parser.add_argument('--timeout', metavar='timeout', type=int,
 parser.add_argument('--timeout_delete', metavar='timeout_delete', type=int,
                     default=45,
                     help='Max number of second to delete an existing instance')
+
+parser.add_argument('--force_delete', action='store_true',
+                    help='Try to force delete of the stack resources')
 
 parser.add_argument('--verbose', action='count',
                     help='Print requests on stderr.')
@@ -222,7 +268,7 @@ except Exception as e:
     script_critical("Error while creating the Heat stack: %s\n" % e)
 
 # Wait a bit
-time.sleep(5)
+time.sleep(10)
 
 # Now delete the stack and wait for its deletion
 try:
@@ -232,7 +278,50 @@ try:
     if spent_time >= args.timeout_delete:
         script_critical("Stack deletion took too long")
 
-except Exception as e:
+except FailedDeletion as e:
+    if args.force_delete:
+        resources = {}
+        dependencies = {}
+
+        for resource in heat_client.resources.list(stack_id):
+            resources[resource.resource_name] = resource
+            dependencies.setdefault(resource.resource_name, set())
+            for required_by in resource.required_by:
+                dependencies.setdefault(required_by, set()).add(resource.resource_name)
+
+        nova_client = nova.Client('1.1',
+                                  username=args.username,
+                                  project_id=args.tenant,
+                                  api_key=args.password,
+                                  auth_url=args.auth_url,
+                                  endpoint_type=args.endpoint_type)
+
+        cinder_client = cinder.Client('1',
+                                      username=args.username,
+                                      project_id=args.tenant,
+                                      api_key=args.password,
+                                      auth_url=args.auth_url,
+                                      endpoint_type=args.endpoint_type)
+
+        nova_client.authenticate()
+        cinder_client.authenticate()
+
+        for resource_name in topological_sort(dependencies.items()):
+            resource = resources[resource_name]
+            if resource.resource_status == 'DELETE_FAILED':
+                if resource.resource_type == 'OS::Cinder::Volume':
+                    force_delete_resource(cinder_client.volumes, resource.physical_resource_id)
+                elif resource.resource_type == 'OS::Nova::Server':
+                    force_delete_resource(nova_client.servers, resource.physical_resource_id)
+
+        heat_client.stacks.delete(stack_id)
+
+        try:
+            spent_time = wait_for_completion(heat_client, stack_id, args.timeout_delete)
+            script_warning("Stack needed to force deleted")
+        except FailedDeletion:
+            pass
+
     script_critical("Error while deleting the Heat stack: %s\n" % e)
 
 
