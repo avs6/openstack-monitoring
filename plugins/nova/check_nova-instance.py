@@ -29,6 +29,7 @@ from novaclient.client import Client
 from novaclient import exceptions
 import glanceclient.client as glance
 from keystoneclient.v2_0 import client as keystone
+from neutronclient.neutron import client as neutron
 import time
 import logging
 import urlparse
@@ -68,15 +69,17 @@ def totimestamp(dt=None, epoch=datetime(1970, 1, 1)):
 
 
 class Novautils:
-    def __init__(self, nova_client, glance_client):
+    def __init__(self, nova_client, glance_client, neutron_client):
         self.nova_client = nova_client
         self.glance_client = glance_client
+        self.neutron_client = neutron_client
         self.msgs = []
         self.start = totimestamp()
         self.notifications = ["instance_creation_time=%s" % self.start]
         self.performances = []
         self.instance = None
         self.connection_done = False
+        self.network = None
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -155,14 +158,12 @@ class Novautils:
                              )
                          )
 
-                if len(images) > 1:
-                    raise Exception("Image must be unique")
-
                 self.image = images[0]
 
             except Exception as e:
                 self.msgs.append("Cannot find the image %s (%s)"
                                  % (image_name, e))
+
     def get_flavor(self, flavor_name):
         if not self.msgs:
             try:
@@ -171,13 +172,30 @@ class Novautils:
                 self.msgs.append("Cannot find the flavor %s (%s)"
                                  % (flavor_name, e))
 
+    def get_network(self, network_name):
+        if not self.msgs:
+            if not self.network:
+                try:
+                    self.network = self.neutron_client.list_networks(
+                                       name=network_name,
+                                       fields='id'
+                                   )['networks'][0]['id']
+                except Exception as e:
+                    self.msgs.append("Cannot find network named '%s'." % network_name)
+
     def create_instance(self, instance_name, availability_zone=None):
         if not self.msgs:
+            if self.network:
+                nics = [{'net-id': self.network}]
+            else:
+                nics = None
+
             try:
                 self.instance = self.nova_client.servers.create(
                     name=instance_name,
                     image=self.image,
                     availability_zone=availability_zone,
+                    nics=nics,
                     flavor=self.flavor)
             except Exception as e:
                 self.msgs.append("Cannot create the vm %s (%s)"
@@ -303,6 +321,10 @@ parser.add_argument('--availability_zone', metavar='availability_zone', type=str
                     default=None,
                     help="Specify the zone and optionally the host (using zone:host syntax)")
 
+parser.add_argument('--network_name', metavar='network_name', type=str,
+                    default=None,
+                    help="Specify the network to boot the VM in")
+
 parser.add_argument('--force_delete', action='store_true',
                     help='If matching instances are found delete them and add'
                     + 'a notification in the message instead of getting out'
@@ -369,10 +391,19 @@ try:
                                   endpoint_type=args.endpoint_type,
                                   token=ksclient.auth_token)
 
+    neutron_endpoint = ksclient.service_catalog.url_for(
+                           service_type='network',
+                           endpoint_type=args.endpoint_type
+                       )
+
+    neutron_client = neutron.Client('2.0',
+                                    endpoint_url=neutron_endpoint,
+                                    token=ksclient.auth_token)
+
 except Exception as e:
     script_critical("Error creating nova communication object: %s\n" % e)
 
-util = Novautils(nova_client, glance_client)
+util = Novautils(nova_client, glance_client, neutron_client)
 
 if args.verbose:
     ch = logging.StreamHandler()
@@ -402,6 +433,8 @@ util.check_existing_instance(args.instance_name,
 
 util.get_image(args.image_name, props)
 util.get_flavor(args.flavor_name)
+if args.network_name:
+    util.get_network(args.network_name)
 util.create_instance(args.instance_name, args.availability_zone)
 util.instance_ready(args.timeout)
 util.delete_instance()
