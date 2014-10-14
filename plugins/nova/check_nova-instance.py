@@ -175,11 +175,12 @@ class Novautils:
     def get_network(self, network_name):
         if not self.msgs:
             if not self.network:
+                kwargs = { 'fields': 'id' }
+                if network_name:
+                    kwargs['name'] = network_name
                 try:
-                    self.network = self.neutron_client.list_networks(
-                                       name=network_name,
-                                       fields='id'
-                                   )['networks'][0]['id']
+                    networks = self.neutron_client.list_networks(**kwargs)
+                    self.network = networks['networks'][0]['id']
                 except Exception as e:
                     self.msgs.append("Cannot find network named '%s'." % network_name)
 
@@ -433,8 +434,7 @@ util.check_existing_instance(args.instance_name,
 
 util.get_image(args.image_name, props)
 util.get_flavor(args.flavor_name)
-if args.network_name:
-    util.get_network(args.network_name)
+util.get_network(args.network_name)
 util.create_instance(args.instance_name, args.availability_zone)
 util.instance_ready(args.timeout)
 util.delete_instance()
