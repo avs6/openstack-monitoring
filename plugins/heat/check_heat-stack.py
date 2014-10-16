@@ -132,6 +132,45 @@ def topological_sort(items):
          items = remaining_items
 
 
+def delete_stack(heat_client, nova_client, cinder_client, stack_id, timeout):
+    # Now delete the stack and wait for its deletion
+    try:
+        heat_client.stacks.delete(stack_id)
+
+        spent_time = wait_for_completion(heat_client, stack_id, timeout_delete)
+        if spent_time >= timeout_delete:
+            script_critical("Stack deletion took too long")
+
+    except FailedDeletion as e:
+        resources = {}
+        dependencies = {}
+
+        for resource in heat_client.resources.list(stack_id):
+            resources[resource.resource_name] = resource
+            dependencies.setdefault(resource.resource_name, set())
+
+            for required_by in resource.required_by:
+                dependencies.setdefault(required_by, set()).add(resource.resource_name)
+
+        for resource_name in topological_sort(dependencies.items()):
+            resource = resources[resource_name]
+            if resource.resource_status == 'DELETE_FAILED':
+                if resource.resource_type == 'OS::Cinder::Volume':
+                    force_delete_resource(cinder_client.volumes, resource.physical_resource_id)
+                elif resource.resource_type == 'OS::Nova::Server':
+                    force_delete_resource(nova_client.servers, resource.physical_resource_id)
+
+        heat_client.stacks.delete(stack_id)
+
+        try:
+            spent_time = wait_for_completion(heat_client, stack_id, args.timeout_delete)
+            script_warning("Stack needed to force deleted")
+        except FailedDeletion:
+            pass
+
+    script_critical("Error while deleting the Heat stack: %s\n" % e)
+
+
 parser = argparse.ArgumentParser(
     description='Check an OpenStack Keystone server.')
 
@@ -225,6 +264,27 @@ try:
                                   endpoint=glance_endpoint,
                                   token=ksclient.auth_token)
 
+    nova_endpoint = ksclient.service_catalog.url_for(
+                        service_type='compute',
+                        endpoint_type=args.endpoint_type
+                    )
+
+    nova_client = nova.Client('1.1',
+                              args.username,
+                              None,
+                              args.tenant,
+                              auth_token=ksclient.auth_token,
+                              auth_url=args.auth_url,
+                              bypass_url=nova_endpoint,
+                              tenant_id=ksclient.tenant_id)
+
+    cinder_client = cinder.Client('1',
+                                  username=args.username,
+                                  project_id=args.tenant,
+                                  api_key=args.password,
+                                  auth_url=args.auth_url,
+                                  endpoint_type=args.endpoint_type)
+
 except Exception as e:
     script_critical("Error while connecting to Heat: %s\n" % e)
 
@@ -242,8 +302,14 @@ try:
                           template_file=args.template)
 
     if args.stack_name:
-        if len(list(heat_client.stacks.list(filters={'name':args.stack_name}))):
-            script_critical("Stack %s already exists" % args.stack_name)
+        stacks = list(heat_client.stacks.list(filters={'name':args.stack_name}))
+        if len(stacks):
+            stack_id = stacks[0].id
+            if args.force_delete:
+                delete_stack(heat_client, nova_client, cinder_client,
+                             stack_id, args.timeout_delete)
+            else:
+                script_critical("Stack %s already exists" % args.stack_name)
         stack_name = args.stack_name
     else:
         stack_name = "check_heat-stack-" + str(uuid.uuid4())
