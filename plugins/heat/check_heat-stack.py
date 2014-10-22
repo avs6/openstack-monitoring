@@ -137,8 +137,8 @@ def delete_stack(heat_client, nova_client, cinder_client, stack_id, timeout):
     try:
         heat_client.stacks.delete(stack_id)
 
-        spent_time = wait_for_completion(heat_client, stack_id, timeout_delete)
-        if spent_time >= timeout_delete:
+        spent_time = wait_for_completion(heat_client, stack_id, timeout)
+        if spent_time >= timeout:
             script_critical("Stack deletion took too long")
 
     except FailedDeletion as e:
@@ -163,12 +163,12 @@ def delete_stack(heat_client, nova_client, cinder_client, stack_id, timeout):
         heat_client.stacks.delete(stack_id)
 
         try:
-            spent_time = wait_for_completion(heat_client, stack_id, args.timeout_delete)
+            spent_time = wait_for_completion(heat_client, stack_id, timeout)
             script_warning("Stack needed to force deleted")
         except FailedDeletion:
             pass
 
-    script_critical("Error while deleting the Heat stack: %s\n" % e)
+        script_critical("Error while deleting the Heat stack: %s\n" % e)
 
 
 parser = argparse.ArgumentParser(
@@ -337,59 +337,8 @@ except Exception as e:
 time.sleep(10)
 
 # Now delete the stack and wait for its deletion
-try:
-    heat_client.stacks.delete(stack_id)
-    
-    spent_time = wait_for_completion(heat_client, stack_id, args.timeout_delete)
-    if spent_time >= args.timeout_delete:
-        script_critical("Stack deletion took too long")
-
-except FailedDeletion as e:
-    if args.force_delete:
-        resources = {}
-        dependencies = {}
-
-        for resource in heat_client.resources.list(stack_id):
-            resources[resource.resource_name] = resource
-            dependencies.setdefault(resource.resource_name, set())
-            for required_by in resource.required_by:
-                dependencies.setdefault(required_by, set()).add(resource.resource_name)
-
-        nova_client = nova.Client('1.1',
-                                  username=args.username,
-                                  project_id=args.tenant,
-                                  api_key=args.password,
-                                  auth_url=args.auth_url,
-                                  endpoint_type=args.endpoint_type)
-
-        cinder_client = cinder.Client('1',
-                                      username=args.username,
-                                      project_id=args.tenant,
-                                      api_key=args.password,
-                                      auth_url=args.auth_url,
-                                      endpoint_type=args.endpoint_type)
-
-        nova_client.authenticate()
-        cinder_client.authenticate()
-
-        for resource_name in topological_sort(dependencies.items()):
-            resource = resources[resource_name]
-            if resource.resource_status == 'DELETE_FAILED':
-                if resource.resource_type == 'OS::Cinder::Volume':
-                    force_delete_resource(cinder_client.volumes, resource.physical_resource_id)
-                elif resource.resource_type == 'OS::Nova::Server':
-                    force_delete_resource(nova_client.servers, resource.physical_resource_id)
-
-        heat_client.stacks.delete(stack_id)
-
-        try:
-            spent_time = wait_for_completion(heat_client, stack_id, args.timeout_delete)
-            script_warning("Stack needed to force deleted")
-        except FailedDeletion:
-            pass
-
-    script_critical("Error while deleting the Heat stack: %s\n" % e)
-
+delete_stack(heat_client, nova_client, cinder_client,
+             stack_id, args.timeout_delete)
 
 end_time = time.time()
 print "OK - Stack creation and deletion took %d seconds" % int(end_time - start_time)
