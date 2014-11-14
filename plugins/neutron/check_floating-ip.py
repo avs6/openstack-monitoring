@@ -3,7 +3,7 @@
 #
 # Keystone monitoring script for Nagios
 #
-# Copyright © 2012-2014 eNovance <licensing@enovance.com>
+# Copyright © 2014 Cloudwatt
 #
 # Authors:
 #   Sofer Athlan-Guyot <sofer.athlan@enovance.com>
@@ -26,7 +26,7 @@
 import sys
 import argparse
 from keystoneclient.v2_0 import client
-from neutronclient.neutron import client as neutron 
+from neutronclient.neutron import client as neutron
 import time
 import logging
 import urlparse
@@ -122,7 +122,7 @@ class Novautils:
                     tenant_id=self.tenant_id)['floatingips']:
                 self.all_floating_ips.append(floating_ip)
         return self.all_floating_ips
-                
+
     def check_existing_floatingip(self, floating_ip=None, delete=False):
         count = 0
         found_ips = []
@@ -150,7 +150,7 @@ class Novautils:
                     self.network_id = self.nova_client.list_networks(name=router_name,fields='id')['networks'][0]['id']
                 except Exception as e:
                     self.msgs.append("Cannot find ext router named '%s'." % router_name)
-        
+
     def create_floating_ip(self):
         if not self.msgs:
             try:

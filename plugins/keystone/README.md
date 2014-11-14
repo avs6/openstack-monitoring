@@ -3,8 +3,6 @@
 ## Links
 
 * Upstream [Nagios forge](http://exchange.nagios.org/directory/Plugins/Software/check_keystone/details) URL.
-* CloudWatt [related US](https://jira.corp.cloudwatt.com/browse/IAAS-754).
-* CloudWatt [monitoring documentation](https://projetx.enovance.com/index.php/Op%C3%A9rations/Monitoring_Openstack)
 
 ## Requirements
 
@@ -35,6 +33,6 @@
 
 ## Usage
 
-* `check_keystone --auth_url http://d-idtcld-0000.usr.dev33.aub.cloudwatt.net:5000/v2.0 --username admin --password zMuIPMVfiRY --tenant openstack identity`
+* `check_keystone --auth_url http://id.provider.net:5000/v2.0 --username admin --password zMuIPMVfiRY --tenant openstack identity`
 
-* `check_keystone --auth_url http://d-idtcld-0000.usr.dev33.aub.cloudwatt.net:5000/v2.0 --username admin --password zMuIPMVfiRY --tenant openstack metering --revoke-token`
+* `check_keystone --auth_url http://id.provider.net:5000/v2.0 --username admin --password zMuIPMVfiRY --tenant openstack metering --revoke-token`

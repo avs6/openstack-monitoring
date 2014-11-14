@@ -4,7 +4,7 @@
 # Nagios check to spot inconsistencies between
 # the running VMs in libvirt and the one in Nova database
 #
-# Copyright © 2014 eNovance <licensing@enovance.com>
+# Copyright © 2014 Cloudwatt
 #
 # Authors:
 #   Sylvain Baubeau <sylvain.baubeau@enovance.com>

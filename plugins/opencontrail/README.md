@@ -3,9 +3,6 @@
 ## Links
 
 * Upstream [github](https://github.com/sbadia/contrail-nagios/) URL.
-* CloudWatt [related US](https://jira.corp.cloudwatt.com/browse/INGPRD-1100).
-* CloudWatt [monitoring documentation](https://wiki.corp.cloudwatt.com/wiki/Op%C3%A9rations/Monitoring_Openstack)
-* Wikipage [cloudwatt wiki](https://wiki.corp.cloudwatt.com/wiki/Opérations/Monitoring_OpenContrail)
  * `pandoc -f markdown -t mediawiki -s README.md -o README.mediawiki`
 
 ## Requirements
@@ -36,23 +33,23 @@ Check vrouter's xmpp connection with controller peers
 
 * Check only the xmpp connection with `10.10.0.58` and `10.10.0.57` peer controller IP
 
->     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -i 10.10.0.58,10.10.0.57
+>     check_vrouter_xmpp -H tt.net -i 10.10.0.58,10.10.0.57
 >     OK: Peer with 10.10.0.58 is Established (last state OpenSent at 2014-Jun-22 08:10:48.772736)
 >     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-25 20:08:29.642435)
 
 * Check only the xmpp connection with the config controller peer
 
->     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -c
+>     check_vrouter_xmpp -H tt.net -c
 >     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
 
 * Check only the xmpp connection with the multicast controller peer
 
->     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net -m
+>     check_vrouter_xmpp -H tt.net -m
 >     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
 
 * Check all xmpp connection peers (warning if one session is down, and critical if all are down)
 
->     check_vrouter_xmpp -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net
+>     check_vrouter_xmpp -H tt.net
 >     OK: Peer with 10.10.0.57 is Established (last state OpenSent at 2014-Jun-22 08:09:30.065507)
 >     OK: Peer with 10.10.0.58 is Established (last state OpenSent at 2014-Jun-22 08:10:48.772736)
 
@@ -70,8 +67,8 @@ Check vrouter's agent state
 
 * Check the state of the vrouter agent
 
->     check_vrouter_agent -H i-ocnclc-0000.adm.int4.aub.cloudwatt.net
->     OK: i-ocnclc-0000.adm.int4.aub.cloudwatt.net in «InitDone» state
+>     check_vrouter_agent -H tt.net
+>     OK: tt.net in «InitDone» state
 
 ### Check\_bgp\_neighbor
 
@@ -89,29 +86,29 @@ Check controller's BGP neighbor
 
 * Check a specific ASN
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940 -v
+>     check_bgp_neighbor -H a.tt.net -a 60940 -v
 >     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
 
 * Check two specific ASN
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -a 60940,64516 -v
+>     check_bgp_neighbor -H a.tt.net -a 60940,64516 -v
 >     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
 >     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established
 
 * Check a specific peer
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9 -v
+>     check_bgp_neighbor -H a.tt.net -i 10.5.250.9 -v
 >     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
 
 * Check a list of specific peer
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -i 10.5.250.9,10.10.0.58 -v
+>     check_bgp_neighbor -H a.tt.net -i 10.5.250.9,10.10.0.58 -v
 >     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
 >     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established
 
 * Check all controller sessions (warning if one session is down, and critical if all are down)
 
->     check_bgp_neighbor -H i-octclc-0000.adm.int4.aub.cloudwatt.net -v
+>     check_bgp_neighbor -H a.tt.net -v
 >     OK: Peer with 10.5.250.9 AS60940 (BGP) is Established
 >     OK: Peer with 10.10.0.58 AS64516 (BGP) is Established
 >     OK: Peer with 10.10.1.57 AS0 (XMPP) is Established

@@ -3,7 +3,7 @@
 #
 # Keystone monitoring script for Nagios
 #
-# Copyright © 2014 
+# Copyright © 2014 Cloudwatt
 #
 # Author: Sofer Athlan-Guyot <sofer.athlan@enovance.com>
 #

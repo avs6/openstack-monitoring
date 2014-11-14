@@ -1,9 +1,5 @@
 # Check Cinder
 
-## Links
-
-* CloudWatt [monitoring documentation](https://projetx.enovance.com/index.php/Op%C3%A9rations/Monitoring_Openstack)
-
 ## Requirements
 
 * python

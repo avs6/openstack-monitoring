@@ -3,7 +3,7 @@
 #
 # Heat monitoring script for Nagios
 #
-# Copyright © 2012-2014 eNovance <licensing@enovance.com>
+# Copyright © 2014 Cloudwatt
 #
 # Authors:
 #   Sylvain Baubeau <sylvain.baubeau@enovance.com>
@@ -59,7 +59,7 @@ def script_warning(msg):
 
 def parse_properties(properties):
     props = {}
-    for prop in properties: 
+    for prop in properties:
         try:
             name, value = prop.split('=')
         except:
@@ -201,7 +201,7 @@ parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
 parser.add_argument('--stack_name', metavar='stack_name', type=str,
                     help="Stack name to use")
 
-parser.add_argument('--image_name', metavar='image_name', type=str, 
+parser.add_argument('--image_name', metavar='image_name', type=str,
                     help="Image name to use")
 
 parser.add_argument('--image_property', metavar='property', type=str,
@@ -294,7 +294,7 @@ if args.image_name:
         props['image_id'] = get_image(glance_client, args.image_name, image_props).id
     except Exception as e:
         script_critical("Error while connecting to Heat: %s\n" % e)
-    
+
 
 # Create the stack and wait for its creation
 try:

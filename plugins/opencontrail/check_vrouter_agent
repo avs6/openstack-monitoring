@@ -3,8 +3,10 @@
 =begin
 
 OpenContrail checks (compat. with nagios exit codes)
-Copyright (C) 2014  Sebastien Badia <sebastien.badia@enovance.com>
-Sources and doc <https://github.com/sbadia/contrail-nagios/>
+
+Copyright (C) 2014  Cloudwatt
+Sebastien Badia <sebastien.badia@enovance.com>
+Sources and doc <https://github.com/cloudwatt/openstack-monitoring/>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
