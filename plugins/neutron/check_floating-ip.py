@@ -91,7 +91,7 @@ def mangle_url(orig_url, url):
     return url
 
 class Novautils:
-    def __init__(self, nova_client, tenant_id):
+    def __init__(self, nova_client, tenant_id, network_id=None):
         self.nova_client = nova_client
         self.msgs = []
         self.start = totimestamp()
@@ -99,7 +99,7 @@ class Novautils:
         self.connection_done = False
         self.all_floating_ips = []
         self.fip = None
-        self.network_id = None
+        self.network_id = network_id
         self.tenant_id = tenant_id
 
     def check_connection(self, force=False):
@@ -147,9 +147,20 @@ class Novautils:
         if not self.msgs:
             if not self.network_id:
                 try:
-                    self.network_id = self.nova_client.list_networks(name=router_name,fields='id')['networks'][0]['id']
+                    network = self.nova_client.list_networks(name=router_name,fields='id')['networks'][0]
+                    self.network_id = network['id']
                 except Exception as e:
                     self.msgs.append("Cannot find ext router named '%s'." % router_name)
+                    return
+            else:
+                try:
+                    network = self.nova_client.show_network(self.network_id)["network"]
+                except Exception as e:
+                    self.msgs.append("Cannot find network with id '%s'." % self.network_id)
+                    return
+
+            if not network.get("router:external", False):
+                self.msgs.append("Network '%s' must be an external network" % self.network_id)
 
     def create_floating_ip(self):
         if not self.msgs:
@@ -221,6 +232,9 @@ parser.add_argument('--ext_router_name', metavar='ext_router_name', type=str,
                     default='public',
                     help='Name of the "public" router (public by default)')
 
+parser.add_argument('--network_id', metavar='network_id', type=str,
+                    help='Id of the network the external router is attached to')
+
 parser.add_argument('--verbose', action='count',
                     help='Print requests on stderr.')
 
@@ -251,7 +265,7 @@ try:
 
 except Exception as e:
     script_critical("Error creating neutron object: %s\n" % e)
-util = Novautils(neutron_client, nova_client.tenant_id)
+util = Novautils(neutron_client, nova_client.tenant_id, args.network_id)
 
 # Initiate the first connection and catch error.
 util.check_connection()
