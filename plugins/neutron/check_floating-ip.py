@@ -248,6 +248,7 @@ try:
         tenant_name=args.tenant,
         password=args.password,
         auth_url=args.auth_url,
+        network_id=args.network_id,
     )
     nova_client.authenticate()
 except Exception as e:
